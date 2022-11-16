@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { BigNumber, constants } from 'ethers';
-import { NestingTokenMock } from '../typechain-types';
+import { NestableTokenMock } from '../typechain-types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
@@ -12,10 +12,10 @@ function bn(x: number): BigNumber {
 const ADDRESS_ZERO = constants.AddressZero;
 
 async function parentChildFixture(): Promise<{
-  parent: NestingTokenMock;
-  child: NestingTokenMock;
+  parent: NestableTokenMock;
+  child: NestableTokenMock;
 }> {
-  const factory = await ethers.getContractFactory('NestingTokenMock');
+  const factory = await ethers.getContractFactory('NestableTokenMock');
 
   const parent = await factory.deploy();
   await parent.deployed();
@@ -24,9 +24,9 @@ async function parentChildFixture(): Promise<{
   return { parent, child };
 }
 
-describe('NestingMock', function () {
-  let parent: NestingTokenMock;
-  let child: NestingTokenMock;
+describe('NestableMock', function () {
+  let parent: NestableTokenMock;
+  let child: NestableTokenMock;
   let owner: SignerWithAddress;
 
   beforeEach(async function () {
@@ -37,7 +37,7 @@ describe('NestingMock', function () {
     this.childToken = child;
   });
 
-  shouldBehaveLikeNesting();
+  shouldBehaveLikeNestable();
 
   describe('Minting', async function () {
     it('cannot mint id 0', async function () {
@@ -90,11 +90,11 @@ describe('NestingMock', function () {
   });
 });
 
-async function shouldBehaveLikeNesting() {
+async function shouldBehaveLikeNestable() {
   let addrs: SignerWithAddress[];
   let tokenOwner: SignerWithAddress;
-  let parent: NestingTokenMock;
-  let child: NestingTokenMock;
+  let parent: NestableTokenMock;
+  let child: NestableTokenMock;
 
   beforeEach(async function () {
     const [, signerTokenOwner, ...signersAddr] = await ethers.getSigners();
@@ -149,14 +149,14 @@ async function shouldBehaveLikeNesting() {
       );
     });
 
-    it('cannot nest mint to non nesting receiver', async function () {
+    it('cannot nest mint to non nestable receiver', async function () {
       const ERC721 = await ethers.getContractFactory('ERC721Mock');
       const nonReceiver = await ERC721.deploy('Non receiver', 'NR');
       await nonReceiver.deployed();
 
       await expect(child.nestMint(nonReceiver.address, 1, 1)).to.be.revertedWithCustomError(
         child,
-        'MintToNonNestingImplementer',
+        'MintToNonNestableImplementer',
       );
     });
 
@@ -303,7 +303,7 @@ async function shouldBehaveLikeNesting() {
       expect(await parent.supportsInterface('0x80ac58cd')).to.equal(true);
     });
 
-    it('can support INesting', async function () {
+    it('can support INestable', async function () {
       expect(await parent.supportsInterface('0x3457be69')).to.equal(true);
     });
 
@@ -1026,7 +1026,7 @@ async function shouldBehaveLikeNesting() {
       // We can no longer nest transfer it, even if we are the root owner:
       await expect(
         child.connect(firstOwner).nestTransfer(child.address, childId1, childId1),
-      ).to.be.revertedWithCustomError(child, 'NestingTransferToSelf');
+      ).to.be.revertedWithCustomError(child, 'NestableTransferToSelf');
     });
 
     it('cannot nest tranfer a descendant same NFT', async function () {
@@ -1038,11 +1038,11 @@ async function shouldBehaveLikeNesting() {
       // Cannot send parent to grandChild
       await expect(
         parent.connect(firstOwner).nestTransfer(child.address, parentId, grandChildId),
-      ).to.be.revertedWithCustomError(child, 'NestingTransferToDescendant');
+      ).to.be.revertedWithCustomError(child, 'NestableTransferToDescendant');
       // Cannot send parent to child
       await expect(
         parent.connect(firstOwner).nestTransfer(child.address, parentId, childId1),
-      ).to.be.revertedWithCustomError(child, 'NestingTransferToDescendant');
+      ).to.be.revertedWithCustomError(child, 'NestableTransferToDescendant');
     });
 
     it('cannot nest tranfer if ancestors tree is too deep', async function () {
@@ -1055,7 +1055,7 @@ async function shouldBehaveLikeNesting() {
       // Cannot send parent to lastChild
       await expect(
         parent.connect(firstOwner).nestTransfer(child.address, parentId, lastId),
-      ).to.be.revertedWithCustomError(child, 'NestingTooDeep');
+      ).to.be.revertedWithCustomError(child, 'NestableTooDeep');
     });
 
     it('cannot nest tranfer if not owner', async function () {
@@ -1078,16 +1078,16 @@ async function shouldBehaveLikeNesting() {
       ).to.be.revertedWithCustomError(child, 'IsNotContract');
     });
 
-    it('cannot nest tranfer to contract if it does implement INesting', async function () {
+    it('cannot nest tranfer to contract if it does implement INestable', async function () {
       const ERC721 = await ethers.getContractFactory('ERC721Mock');
-      const nonNesting = await ERC721.deploy('Non receiver', 'NR');
-      await nonNesting.deployed();
+      const nonNestable = await ERC721.deploy('Non receiver', 'NR');
+      await nonNestable.deployed();
       await expect(
-        child.connect(firstOwner).nestTransfer(nonNesting.address, childId1, parentId),
-      ).to.be.revertedWithCustomError(child, 'NestingTransferToNonNestingImplementer');
+        child.connect(firstOwner).nestTransfer(nonNestable.address, childId1, parentId),
+      ).to.be.revertedWithCustomError(child, 'NestableTransferToNonNestableImplementer');
     });
 
-    it('can nest tranfer to INesting contract', async function () {
+    it('can nest tranfer to INestable contract', async function () {
       await child.connect(firstOwner).nestTransfer(parent.address, childId1, parentId);
       expect(await child.ownerOf(childId1)).to.eql(firstOwner.address);
       expect(await child.directOwnerOf(childId1)).to.eql([parent.address, bn(parentId), true]);
@@ -1107,7 +1107,7 @@ async function shouldBehaveLikeNesting() {
   }
 
   async function checkAcceptedAndPendingChildren(
-    contract: NestingTokenMock,
+    contract: NestableTokenMock,
     tokenId1: number,
     expectedAccepted: any[],
     expectedPending: any[],

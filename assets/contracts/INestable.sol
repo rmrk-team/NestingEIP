@@ -3,11 +3,11 @@
 pragma solidity ^0.8.16;
 
 /**
- * @title INesting
+ * @title INestable
  * @author RMRK team
- * @notice Interface smart contract of the RMRK nesting module.
+ * @notice Interface smart contract of the RMRK nestable module.
  */
-interface INesting {
+interface INestable {
     /**
      * @notice The core struct of ownership.
      * @dev The `DirectOwner` struct is used to store information of the next immediate owner, be it the parent token or

@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.16;
 
-import "../NestingToken.sol";
+import "../NestableToken.sol";
 
-//Minimal public implementation of IRMRKNesting for testing.
-contract NestingTokenMock is NestingToken {
-    constructor() NestingToken() {}
+//Minimal public implementation of IRMRKNestable for testing.
+contract NestableTokenMock is NestableToken {
+    constructor() NestableToken() {}
 
     function mint(address to, uint256 tokenId) external {
         _mint(to, tokenId);

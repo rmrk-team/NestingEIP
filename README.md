@@ -27,7 +27,7 @@ The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL 
 
 pragma solidity ^0.8.16;
 
-interface INesting {
+interface INestable {
     /**
      * @notice The core struct of ownership.
      * @dev The `DirectOwner` struct is used to store information of the next immediate owner, be it the parent token or
@@ -322,11 +322,11 @@ interface INesting {
 
 ## Backwards Compatibility
 
-The Nesting token standard has been made compatible with [EIP-721](./eip-721.md) in order to take advantage of the robust tooling available for implementations of EIP-721 and to ensure compatibility with existing EIP-721 infrastructure.
+The Nestable token standard has been made compatible with [EIP-721](./eip-721.md) in order to take advantage of the robust tooling available for implementations of EIP-721 and to ensure compatibility with existing EIP-721 infrastructure.
 
 ## Test Cases
 
-Tests are included in [`nesting.ts`](../assets/eip-xxxx/test/nesting.ts).
+Tests are included in [`nestable.ts`](../assets/eip-xxxx/test/nestable.ts).
 
 To run them in terminal, you can use the following commands:
 
@@ -338,7 +338,7 @@ npx hardhat test
 
 ## Reference Implementation
 
-See [`NestingToken.sol`](../assets/eip-xxxx/contracts/NestingToken.sol).
+See [`NestableToken.sol`](../assets/eip-xxxx/contracts/NestableToken.sol).
 
 
 ## Security Considerations
