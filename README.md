@@ -1,5 +1,5 @@
 ---
-eip:
+eip: eip-xxxx
 title: Nestable tokens
 description: 
 author: Bruno Škvorc (@Swader), Cicada (@CicadaNCR), Steven Pineda (@steven2308), Stevan Bogosavljevic (@stevyhacker), Jan Turk (@ThunderDeliverer)
@@ -326,8 +326,19 @@ The Nesting token standard has been made compatible with [EIP-721](./eip-721.md)
 
 ## Test Cases
 
+Tests are included in [`nesting.ts`](../assets/eip-xxxx/test/nesting.ts).
+
+To run them in terminal, you can use the following commands:
+
+```
+cd ../assets/eip-xxxx
+npm install
+npx hardhat test
+```
 
 ## Reference Implementation
+
+See [`NestingToken.sol`](../assets/eip-xxxx/contracts/NestingToken.sol).
 
 
 ## Security Considerations

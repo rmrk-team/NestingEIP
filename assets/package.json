@@ -1,5 +1,5 @@
 {
-  "name": "eip-5773",
+  "name": "nestable-tokens",
   "dependencies": {
     "@openzeppelin/contracts": "^4.6.0"
   },
