@@ -24,20 +24,17 @@ async function parentChildFixture(): Promise<{
   return { parent, child };
 }
 
-describe('NestableMock', function () {
+describe('NestableToken', function () {
   let parent: NestableTokenMock;
   let child: NestableTokenMock;
   let owner: SignerWithAddress;
+  let tokenOwner: SignerWithAddress;
+  let addrs: SignerWithAddress[];
 
   beforeEach(async function () {
-    owner = (await ethers.getSigners())[0];
-
+    [owner, tokenOwner, ...addrs] = await ethers.getSigners();
     ({ parent, child } = await loadFixture(parentChildFixture));
-    this.parentToken = parent;
-    this.childToken = child;
   });
-
-  shouldBehaveLikeNestable();
 
   describe('Minting', async function () {
     it('cannot mint id 0', async function () {
@@ -87,25 +84,7 @@ describe('NestableMock', function () {
         child.nestMint(parent.address, childId1, parentId),
       ).to.be.revertedWithCustomError(child, 'ERC721TokenAlreadyMinted');
     });
-  });
-});
 
-async function shouldBehaveLikeNestable() {
-  let addrs: SignerWithAddress[];
-  let tokenOwner: SignerWithAddress;
-  let parent: NestableTokenMock;
-  let child: NestableTokenMock;
-
-  beforeEach(async function () {
-    const [, signerTokenOwner, ...signersAddr] = await ethers.getSigners();
-    tokenOwner = signerTokenOwner;
-    addrs = signersAddr;
-
-    parent = this.parentToken;
-    child = this.childToken;
-  });
-
-  describe('Minting', async function () {
     it('can mint with no destination', async function () {
       const tokenId1 = 1;
       await child.mint(tokenOwner.address, tokenId1);
@@ -1118,4 +1097,4 @@ async function shouldBehaveLikeNestable() {
     const pending = await contract.pendingChildrenOf(tokenId1);
     expect(pending).to.eql(expectedPending);
   }
-}
+});
