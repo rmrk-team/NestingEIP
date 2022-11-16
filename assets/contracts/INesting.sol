@@ -126,14 +126,9 @@ interface INesting {
      * @return uint256 The ID of the parent token. Should be `0` if the owner is an externally owned account
      * @return bool The boolean value signifying whether the owner is an NFT or not
      */
-    function directOwnerOf(uint256 tokenId)
-        external
-        view
-        returns (
-            address,
-            uint256,
-            bool
-        );
+    function directOwnerOf(
+        uint256 tokenId
+    ) external view returns (address, uint256, bool);
 
     /**
      * @notice Used to burn a given token.
@@ -146,9 +141,10 @@ interface INesting {
      * @param maxRecursiveBurns Maximum number of tokens to recursively burn
      * @return uint256 Number of recursively burned children
      */
-    function burn(uint256 tokenId, uint256 maxRecursiveBurns)
-        external
-        returns (uint256);
+    function burn(
+        uint256 tokenId,
+        uint256 maxRecursiveBurns
+    ) external returns (uint256);
 
     /**
      * @notice Used to add a child token to a given parent token.
@@ -226,10 +222,9 @@ interface INesting {
      * @param parentId ID of the parent token for which to retrieve the active child tokens
      * @return struct[] An array of Child structs containing the parent token's active child tokens
      */
-    function childrenOf(uint256 parentId)
-        external
-        view
-        returns (Child[] memory);
+    function childrenOf(
+        uint256 parentId
+    ) external view returns (Child[] memory);
 
     /**
      * @notice Used to retrieve the pending child tokens of a given parent token.
@@ -242,10 +237,9 @@ interface INesting {
      * @param parentId ID of the parent token for which to retrieve the pending child tokens
      * @return struct[] An array of Child structs containing the parent token's pending child tokens
      */
-    function pendingChildrenOf(uint256 parentId)
-        external
-        view
-        returns (Child[] memory);
+    function pendingChildrenOf(
+        uint256 parentId
+    ) external view returns (Child[] memory);
 
     /**
      * @notice Used to retrieve a specific active child token for a given parent token.
@@ -259,10 +253,10 @@ interface INesting {
      * @param index Index of the child token in the parent token's active child tokens array
      * @return struct A Child struct containing data about the specified child
      */
-    function childOf(uint256 parentId, uint256 index)
-        external
-        view
-        returns (Child memory);
+    function childOf(
+        uint256 parentId,
+        uint256 index
+    ) external view returns (Child memory);
 
     /**
      * @notice Used to retrieve a specific pending child token from a given parent token.
@@ -276,10 +270,10 @@ interface INesting {
      * @param index Index of the child token in the parent token's pending child tokens array
      * @return struct A Child struct containting data about the specified child
      */
-    function pendingChildOf(uint256 parentId, uint256 index)
-        external
-        view
-        returns (Child memory);
+    function pendingChildOf(
+        uint256 parentId,
+        uint256 index
+    ) external view returns (Child memory);
 
     /**
      * @notice Used to transfer the token into another token.

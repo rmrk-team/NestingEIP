@@ -125,12 +125,9 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
     /**
      * @inheritdoc IERC165
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual returns (bool) {
         return
             interfaceId == type(IERC165).interfaceId ||
             interfaceId == type(IERC721).interfaceId ||
@@ -492,13 +489,9 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @param tokenId ID of the token for which the root owner is being retrieved
      * @return address Address of the root owner of the given token
      */
-    function ownerOf(uint256 tokenId)
-        public
-        view
-        virtual
-        override(INesting, IERC721)
-        returns (address)
-    {
+    function ownerOf(
+        uint256 tokenId
+    ) public view virtual override(INesting, IERC721) returns (address) {
         (address owner, uint256 ownerTokenId, bool isNft) = directOwnerOf(
             tokenId
         );
@@ -520,16 +513,9 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      *  should be `0`
      * @return bool A boolean value signifying whether the immediate owner is a token (`true`) or not (`false`)
      */
-    function directOwnerOf(uint256 tokenId)
-        public
-        view
-        virtual
-        returns (
-            address,
-            uint256,
-            bool
-        )
-    {
+    function directOwnerOf(
+        uint256 tokenId
+    ) public view virtual returns (address, uint256, bool) {
         DirectOwner memory owner = _directOwners[tokenId];
         if (owner.ownerAddress == address(0)) revert ERC721InvalidTokenId();
 
@@ -560,12 +546,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @param maxChildrenBurns Maximum children to recursively burn
      * @return uint256 The number of recursive burns it took to burn all of the children
      */
-    function burn(uint256 tokenId, uint256 maxChildrenBurns)
-        public
-        virtual
-        onlyApprovedOrDirectOwner(tokenId)
-        returns (uint256)
-    {
+    function burn(
+        uint256 tokenId,
+        uint256 maxChildrenBurns
+    ) public virtual onlyApprovedOrDirectOwner(tokenId) returns (uint256) {
         return _burn(tokenId, maxChildrenBurns);
     }
 
@@ -582,12 +566,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @param maxChildrenBurns Maximum children to recursively burn
      * @return uint256 The number of recursive burns it took to burn all of the children
      */
-    function _burn(uint256 tokenId, uint256 maxChildrenBurns)
-        internal
-        virtual
-        onlyApprovedOrDirectOwner(tokenId)
-        returns (uint256)
-    {
+    function _burn(
+        uint256 tokenId,
+        uint256 maxChildrenBurns
+    ) internal virtual onlyApprovedOrDirectOwner(tokenId) returns (uint256) {
         (address immediateOwner, uint256 parentId, ) = directOwnerOf(tokenId);
         address owner = ownerOf(tokenId);
         _balances[immediateOwner] -= 1;
@@ -676,12 +658,9 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
     /**
      * @inheritdoc IERC721
      */
-    function getApproved(uint256 tokenId)
-        public
-        view
-        virtual
-        returns (address)
-    {
+    function getApproved(
+        uint256 tokenId
+    ) public view virtual returns (address) {
         _requireMinted(tokenId);
 
         return _tokenApprovals[tokenId][ownerOf(tokenId)];
@@ -699,12 +678,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
     /**
      * @inheritdoc IERC721
      */
-    function isApprovedForAll(address owner, address operator)
-        public
-        view
-        virtual
-        returns (bool)
-    {
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view virtual returns (bool) {
         return _operatorApprovals[owner][operator];
     }
 
@@ -765,12 +742,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @param tokenId ID of the token being checked
      * @return bool The boolean value indicating whether the `spender` is approved to manage the given token
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isApprovedOrOwner(
+        address spender,
+        uint256 tokenId
+    ) internal view virtual returns (bool) {
         address owner = ownerOf(tokenId);
         return (spender == owner ||
             isApprovedForAll(owner, spender) ||
@@ -784,12 +759,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @return bool The boolean value indicating whether the `spender` is approved to manage the given token or its
      *  direct owner
      */
-    function _isApprovedOrDirectOwner(address spender, uint256 tokenId)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isApprovedOrDirectOwner(
+        address spender,
+        uint256 tokenId
+    ) internal view virtual returns (bool) {
         (address owner, uint256 parentId, ) = directOwnerOf(tokenId);
         // When the parent is an NFT, only it can do operations
         if (parentId != 0) {
@@ -975,11 +948,9 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      *  rootOwner of the previous parent.
      * @param tokenId ID of the parent token for which to reject all of the pending tokens
      */
-    function rejectAllChildren(uint256 tokenId)
-        public
-        virtual
-        onlyApprovedOrOwner(tokenId)
-    {
+    function rejectAllChildren(
+        uint256 tokenId
+    ) public virtual onlyApprovedOrOwner(tokenId) {
         _rejectAllChildren(tokenId);
     }
 
@@ -1119,12 +1090,9 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @return struct[] An array of Child structs containing the parent token's active child tokens
      */
 
-    function childrenOf(uint256 parentId)
-        public
-        view
-        virtual
-        returns (Child[] memory)
-    {
+    function childrenOf(
+        uint256 parentId
+    ) public view virtual returns (Child[] memory) {
         Child[] memory children = _activeChildren[parentId];
         return children;
     }
@@ -1141,12 +1109,9 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @return struct[] An array of Child structs containing the parent token's pending child tokens
      */
 
-    function pendingChildrenOf(uint256 parentId)
-        public
-        view
-        virtual
-        returns (Child[] memory)
-    {
+    function pendingChildrenOf(
+        uint256 parentId
+    ) public view virtual returns (Child[] memory) {
         Child[] memory pendingChildren = _pendingChildren[parentId];
         return pendingChildren;
     }
@@ -1163,12 +1128,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @param index Index of the child token in the parent token's active child tokens array
      * @return struct A Child struct containing data about the specified child
      */
-    function childOf(uint256 parentId, uint256 index)
-        public
-        view
-        virtual
-        returns (Child memory)
-    {
+    function childOf(
+        uint256 parentId,
+        uint256 index
+    ) public view virtual returns (Child memory) {
         if (childrenOf(parentId).length <= index) revert ChildIndexOutOfRange();
         Child memory child = _activeChildren[parentId][index];
         return child;
@@ -1186,12 +1149,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @param index Index of the child token in the parent token's pending child tokens array
      * @return struct A Child struct containting data about the specified child
      */
-    function pendingChildOf(uint256 parentId, uint256 index)
-        public
-        view
-        virtual
-        returns (Child memory)
-    {
+    function pendingChildOf(
+        uint256 parentId,
+        uint256 index
+    ) public view virtual returns (Child memory) {
         if (pendingChildrenOf(parentId).length <= index)
             revert PendingChildIndexOutOfRange();
         Child memory child = _pendingChildren[parentId][index];
@@ -1205,12 +1166,10 @@ contract NestingToken is Context, IERC165, IERC721, INesting {
      * @return bool A boolean value signifying whether the given child token is included in an active child tokens array
      *  of a token (`true`) or not (`false`)
      */
-    function childIsInActive(address childAddress, uint256 childId)
-        public
-        view
-        virtual
-        returns (bool)
-    {
+    function childIsInActive(
+        address childAddress,
+        uint256 childId
+    ) public view virtual returns (bool) {
         return _childIsInActive[childAddress][childId] != 0;
     }
 
