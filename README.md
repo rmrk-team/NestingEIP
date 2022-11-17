@@ -1,6 +1,6 @@
 ---
 eip: eip-xxxx
-title: Parent-governed Nestable Non-Fungible Tokens
+title: Parent-Governed Nestable Non-Fungible Tokens
 description: 
 author: Bruno Škvorc (@Swader), Cicada (@CicadaNCR), Steven Pineda (@steven2308), Stevan Bogosavljevic (@stevyhacker), Jan Turk (@ThunderDeliverer)
 discussions-to:
@@ -13,7 +13,7 @@ requires: 165, 721
 
 ## Abstract
 
-The Nestable NFT standard allows for a new inter-NFT relationship and interaction.
+The Parent-Governed Nestable NFT standard allows for a new inter-NFT relationship and interaction.
 
 An NFT can be owned by a single other NFT, but can in turn have a number of NFTs that it owns. This proposal established the framework for the parent-child relationships of NFTs. A parent token is the one that owns another token. A child token is the token that is owned by another token. A token can be both a parent and child at the same time. Child tokens of a given tokens can be fully managed by the parent token's owner, but can be proposed by anyone.
 
