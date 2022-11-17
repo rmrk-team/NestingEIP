@@ -1,6 +1,6 @@
 ---
 eip: eip-xxxx
-title: Nestable Non-Fungible Tokens
+title: Parent-governed Nestable Non-Fungible Tokens
 description: 
 author: Bruno Škvorc (@Swader), Cicada (@CicadaNCR), Steven Pineda (@steven2308), Stevan Bogosavljevic (@stevyhacker), Jan Turk (@ThunderDeliverer)
 discussions-to:
