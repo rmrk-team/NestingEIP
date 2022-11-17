@@ -1,7 +1,7 @@
 ---
 eip: eip-xxxx
 title: Parent-Governed Nestable Non-Fungible Tokens
-description: 
+description: An interface for Nestable Non-Fungible Tokens with emphasis on parent token's control over the relationship.
 author: Bruno Škvorc (@Swader), Cicada (@CicadaNCR), Steven Pineda (@steven2308), Stevan Bogosavljevic (@stevyhacker), Jan Turk (@ThunderDeliverer)
 discussions-to:
 status: Draft
