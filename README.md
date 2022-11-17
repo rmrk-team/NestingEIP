@@ -1,6 +1,6 @@
 ---
 eip: eip-xxxx
-title: Nestable tokens
+title: Nestable Non-Fungible Tokens
 description: 
 author: Bruno Škvorc (@Swader), Cicada (@CicadaNCR), Steven Pineda (@steven2308), Stevan Bogosavljevic (@stevyhacker), Jan Turk (@ThunderDeliverer)
 discussions-to:
@@ -22,8 +22,9 @@ requires: 165, 721
 The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119.
 
 ```solidity
-/// @title TBA
-///  Note: the ERC-165 identifier for this interface is 0x60b766e5.
+/// @title ERC-X Nestable Non-Fungible Tokens
+/// @dev See https://eips.ethereum.org/EIPS/eip-x
+/// @dev Note: the ERC-165 identifier for this interface is 0x60b766e5.
 
 pragma solidity ^0.8.16;
 
@@ -32,11 +33,11 @@ interface INestable {
      * @notice The core struct of ownership.
      * @dev The `DirectOwner` struct is used to store information of the next immediate owner, be it the parent token or
      *  the externally owned account.
-     * @dev If the token is owned by the externally owned account, the `tokenId` should equal `0`.
+     * @dev If the token is owned by the externally owned account, the `tokenId` MUST equal `0`.
      * @param tokenId ID of the parent token
-     * @param ownerAddress Address of the owner of the token. If the owner is another token, then the address should be
+     * @param ownerAddress Address of the owner of the token. If the owner is another token, then the address MUST be
      *  the one of the parent token's collection smart contract. If the owner is externally owned account, the address
-     *  should be the address of this account
+     *  MUST be the address of this account
      * @param isNft A boolean value signifying whether the token is owned by another token (`true`) or by an externally
      *  owned account (`false`)
      */
@@ -51,8 +52,8 @@ interface INestable {
      * @dev Emitted when `tokenId` token is transferred from `from` to `to`.
      * @param from Address of the previous immediate owner, which is a smart contract if the token was nested.
      * @param to Address of the new immediate owner, which is a smart contract if the token is being nested.
-     * @param fromTokenId ID of the previous parent token. If the token was not nested before, the value should be `0`
-     * @param toTokenId ID of the new parent token. If the token is not being nested, the value should be `0`
+     * @param fromTokenId ID of the previous parent token. If the token was not nested before, the value MUST be `0`
+     * @param toTokenId ID of the new parent token. If the token is not being nested, the value MUST be `0`
      * @param tokenId ID of the token being transferred
      */
     event NestTransfer(
@@ -139,11 +140,11 @@ interface INestable {
 
     /**
      * @notice Used to retrieve the immediate owner of the given token.
-     * @dev If the immediate owner is another token, the address returned, should be the one of the parent token's
+     * @dev If the immediate owner is another token, the address returned, MUST be the one of the parent token's
      *  collection smart contract.
      * @param tokenId ID of the token for which the direct owner is being retrieved
      * @return address Address of the given token's owner
-     * @return uint256 The ID of the parent token. Should be `0` if the owner is an externally owned account
+     * @return uint256 The ID of the parent token. MUST be `0` if the owner is an externally owned account
      * @return bool The boolean value signifying whether the owner is an NFT or not
      */
     function directOwnerOf(uint256 tokenId)
@@ -158,10 +159,10 @@ interface INestable {
     /**
      * @notice Used to burn a given token.
      * @dev When a token is burned, all of its child tokens are recursively burned as well.
-     * @dev When specifying the maximum recursive burns, the execution will be reverted if there are more children to be
+     * @dev When specifying the maximum recursive burns, the execution MUST be reverted if there are more children to be
      *  burned.
-     * @dev Setting the `maxRecursiveBurn` value to 0 will only attempt to burn the specified token and revert if there
-     *  are any child tokens present.
+     * @dev Setting the `maxRecursiveBurn` value to 0 SHOULD only attempt to burn the specified token and MUST revert if
+     *  there are any child tokens present.
      * @param tokenId ID of the token to burn
      * @param maxRecursiveBurns Maximum number of tokens to recursively burn
      * @return uint256 Number of recursively burned children
@@ -175,8 +176,8 @@ interface INestable {
      * @dev This adds the child token into the given parent token's pending child tokens array.
      * @dev Requirements:
      *
-     *  - `directOwnerOf` on the child contract must resolve to the called contract.
-     *  - the pending array of the parent contract must not be full.
+     *  - `directOwnerOf` on the child contract MUST resolve to the called contract.
+     *  - the pending array of the parent contract MUST not be full.
      * @param parentId ID of the parent token to receive the new child token
      * @param childId ID of the new proposed child token
      */
@@ -205,9 +206,7 @@ interface INestable {
      * @dev The children's ownership structures are not updated.
      * @dev Requirements:
      *
-     * Requirements:
-     *
-     * - `parentId` must exist
+     * - `parentId` MUST exist
      * @param parentId ID of the parent token for which to reject all of the pending tokens
      *
      */
@@ -215,7 +214,7 @@ interface INestable {
 
     /**
      * @notice Used to unnest a child token from a given parent token.
-     * @dev When unnesting a child token, the owner of the token is set to `to`, or is not updated in the event of `to`
+     * @dev When unnesting a child token, the owner of the token MUST be set to `to`, or not updated in the event of `to`
      *  being the `0x0` address.
      * @param tokenId ID of the token from which to unnest a child token
      * @param to Address of the new owner of the child token being unnested
