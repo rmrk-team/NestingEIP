@@ -15,7 +15,31 @@ requires: 165, 721
 
 The Parent-Governed Nestable NFT standard allows for a new inter-NFT relationship and interaction.
 
-An NFT can be owned by a single other NFT, but can in turn have a number of NFTs that it owns. This proposal established the framework for the parent-child relationships of NFTs. A parent token is the one that owns another token. A child token is the token that is owned by another token. A token can be both a parent and child at the same time. Child tokens of a given tokens can be fully managed by the parent token's owner, but can be proposed by anyone.
+At its core, the idea behind the proposal is simple: the owner of an NFT does not have to be an Externally Owned Account (EOA) or a smart contract, it can also be an NFT.
+
+The process of nesting a NFT into another is functionally identical to sending it to another user. The process of sending a token out of another one involves issuing a transaction from the EOA ownining the parent token.
+
+An NFT can be owned by a single other NFT, but can in turn have a number of NFTs that it owns. This proposal establishes the framework for the parent-child relationships of NFTs. A parent token is the one that owns another token. A child token is the token that is owned by another token. A token can be both a parent and child at the same time. Child tokens of a given tokens can be fully managed by the parent token's owner, but can be proposed by anyone.
+
+```mermaid
+graph LR
+    Z(EOA owning parent NFT) --> A[Parent NFT]
+    A --> B[Child NFT]
+    A --> C[Child NFT]
+    A --> D[Child NFT]
+    C --> E[Child's child NFT]
+    C --> F[Child's child NFT]
+    C --> G[Child's child NFT]
+```
+
+The graph illustrates how a child token can also be a parent token, but both are still administered by the root parent token's owner.
+
+This proposal allows for implementations to invoke custom conditions for the parent-child relashionship. Some examples that could benefit from this are:
+
+- Some parent tokens could allow the owner of a child token to withdraw that child at any time (e.g. virtual land containing an avatar).
+- Some parent tokens could be prohibited from executing certain actions on a child (e.g. the owner of a virtual house in which someone else's avatar is a guest, should not be able to burn that guest).
+- Some parent tokens could have special withdrawal conditions, like a music NFT that accepts music stems. These stems could be removed by their owners, until a certain number of co-composers upvote a stem enough, or until the owner of the parent music track seals and "publishes" it.
+
 
 ## Motivation
 
