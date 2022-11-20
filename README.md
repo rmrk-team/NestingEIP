@@ -364,6 +364,47 @@ interface INestable {
 
 ## Rationale
 
+Designing the proposal, we considered the following questions:
+
+1. **How to name the proposal?**
+
+- Working title was Nesting
+- Most control over nesting is granted to the parent or would-be parent
+- The only mechanic granted to the child is the one to initiate nesting
+
+2. **Why is automatically accepting a child using [EIP-712](./eip-712.md) permit-style signatures not a part of this proposal?**
+
+- Overkill, this can be done by an implementer or as an extension
+- This could be done by passing the required values for the pre-signed permitted child accept to nesting transaction (would also require a bit more gas & filesize)
+
+3. **Why use indexes?** 
+
+- Reduce gas consumption
+- Guarding against race conditions using token ID
+
+4. **Why is the pending children array limited instead of supporting pagination?**
+
+- Guard against griefing
+
+5. **Should we allow tokens to be nested into one of its children?**
+
+- This prevents tokens to be unintentionally put in limbo (could be considered burned as they can not be used any more, but for all intents and purposes these tokens still exist)
+
+6. **How does this proposal differ from the other proposals trying to address a similar problem?**
+
+- TODO: Add considerations & comparisons to other proposals
+
+### Mutli-Asset Storage Schema
+
+<!-- Addres how the pending and active arrays keep the token info and why this is more efficient than a single tokens array -->
+
+### Propose-Commit pattern for child token management
+
+<!-- Make sure it comes accross that this protests the token from spam and malicious children -->
+
+### Child token management
+
+<!-- Explain the need for many child management function to provide all of the required functionality for standard use of this proposal -->
 
 ## Backwards Compatibility
 
