@@ -34,13 +34,6 @@ graph LR
 
 The graph illustrates how a child token can also be a parent token, but both are still administered by the root parent token's owner.
 
-This proposal allows for implementations to invoke custom conditions for the parent-child relashionship. Some examples that could benefit from this are:
-
-- Some parent tokens could allow the owner of a child token to withdraw that child at any time (e.g. virtual land containing an avatar).
-- Some parent tokens could be prohibited from executing certain actions on a child (e.g. the owner of a virtual house in which someone else's avatar is a guest, should not be able to burn that guest).
-- Some parent tokens could have special withdrawal conditions, like a music NFT that accepts music stems. These stems could be removed by their owners, until a certain number of co-composers upvote a stem enough, or until the owner of the parent music track seals and "publishes" it.
-
-
 ## Motivation
 
 With NFTs being a widespread form of tokens in the Ethereum ecosystem and being used for a variety of use cases, it is time to standardize additional utility for them. Having the ability for tokens to own other tokens allows for greater utility, usability and forward compatibility.
