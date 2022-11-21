@@ -1,7 +1,7 @@
 ---
 eip: eip-xxxx
-title: Nestable tokens
-description: 
+title: Parent-Governed Nestable Non-Fungible Tokens
+description: An interface for Nestable Non-Fungible Tokens with emphasis on parent token's control over the relationship.
 author: Bruno Škvorc (@Swader), Cicada (@CicadaNCR), Steven Pineda (@steven2308), Stevan Bogosavljevic (@stevyhacker), Jan Turk (@ThunderDeliverer)
 discussions-to:
 status: Draft
@@ -13,17 +13,64 @@ requires: 165, 721
 
 ## Abstract
 
+The Parent-Governed Nestable NFT standard extends the [EIP-721](./eip-721.md) by allowing for a new inter-NFT relationship and interaction.
+
+At its core, the idea behind the proposal is simple: the owner of an NFT does not have to be an Externally Owned Account (EOA) or a smart contract, it can also be an NFT.
+
+The process of nesting a NFT into another is functionally identical to sending it to another user. The process of sending a token out of another one involves issuing a transaction from the EOA ownining the parent token.
+
+An NFT can be owned by a single other NFT, but can in turn have a number of NFTs that it owns. This proposal establishes the framework for the parent-child relationships of NFTs. A parent token is the one that owns another token. A child token is the token that is owned by another token. A token can be both a parent and child at the same time. Child tokens of a given tokens can be fully managed by the parent token's owner, but can be proposed by anyone.
+
+```mermaid
+graph LR
+    Z(EOA owning parent NFT) --> A[Parent NFT]
+    A --> B[Child NFT]
+    A --> C[Child NFT]
+    A --> D[Child NFT]
+    C --> E[Child's child NFT]
+    C --> F[Child's child NFT]
+    C --> G[Child's child NFT]
+```
+
+The graph illustrates how a child token can also be a parent token, but both are still administered by the root parent token's owner.
 
 ## Motivation
 
+With NFTs being a widespread form of tokens in the Ethereum ecosystem and being used for a variety of use cases, it is time to standardize additional utility for them. Having the ability for tokens to own other tokens allows for greater utility, usability and forward compatibility.
+
+In the four years since [EIP-721](./eip-721.md) was published, the need for additional functionality has resulted in countless extensions. This EIP improves upon EIP-721 in the following areas:
+
+- [Bundling](#bundling)
+- [Collecting](#collecting)
+- [Membership](#membership)
+- [Delegation](#delegation)
+
+### Bundling
+
+One of the most frequent uses of [EIP-721](./eip-721.md) is to disseminate the multimedia content that is tied to the tokens. In the event that someone wants to offer a bundle of NFTs from various collections, there is currently no easy way of bundling all of these together and handle their sale as a single transaction. This proposal introduces a standardized way of doing so. Nesting all of the tokens into a simple bundle and selling that bundle would transfer the control of all of the tokens to the buyer in a single transaction.
+
+### Collecting
+
+A lot of NFT consumers collect them based on countless criteria. Some aim for utility of the tokens, some for the uniqueness, some for the visual appeal, etc. There is no standardized way to group the NFTs tied to a specific account. By nesting NFTs based on their owner's preference, this proposal introduces the ability to do it. The root parent token could represent a certain group of tokens and all of the children nested into it would belong to it.
+
+The rise of soulbound, non-transferable, tokens, introduces another need for this proposal. Having a token with multiple solbound traits (child tokens), allows for numerous use cases. One concrete example of this can be drawn from supply trains usecase. A shipping container, represented by an NFT with its own traits, could have multiple child tokens denoting each leg of its journey.
+
+### Membership
+
+A common utility attached to NFTs is a membership to a Decentralised Autonomous Organization (DAO) or to some other closed-access group. Some of these organizations and groups ocasionally mint NFTs to the current holders of the membership NFTs. With the ability to nest mint a token into a token, such minting could be simplified, by simply minting the bonus NFT directly into the membership one.
+
+### Delegation
+
+One of the core features of DAOs is voting and there are various approaches to it. One such mechanic is using fungible voting tokens where members can delegate their votes by sending these tokens to another member. Using this proposal, delegated voting could be handled by nesting your voting NFT into the one you are delegating your votes to and unnesting it when the member no longer wishes to delegate their votes.
 
 ## Specification
 
 The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119.
 
 ```solidity
-/// @title TBA
-///  Note: the ERC-165 identifier for this interface is 0x60b766e5.
+/// @title EIP-X Nestable Non-Fungible Tokens
+/// @dev See https://eips.ethereum.org/EIPS/eip-x
+/// @dev Note: the ERC-165 identifier for this interface is 0x60b766e5.
 
 pragma solidity ^0.8.16;
 
@@ -32,11 +79,11 @@ interface INestable {
      * @notice The core struct of ownership.
      * @dev The `DirectOwner` struct is used to store information of the next immediate owner, be it the parent token or
      *  the externally owned account.
-     * @dev If the token is owned by the externally owned account, the `tokenId` should equal `0`.
+     * @dev If the token is owned by the externally owned account, the `tokenId` MUST equal `0`.
      * @param tokenId ID of the parent token
-     * @param ownerAddress Address of the owner of the token. If the owner is another token, then the address should be
+     * @param ownerAddress Address of the owner of the token. If the owner is another token, then the address MUST be
      *  the one of the parent token's collection smart contract. If the owner is externally owned account, the address
-     *  should be the address of this account
+     *  MUST be the address of this account
      * @param isNft A boolean value signifying whether the token is owned by another token (`true`) or by an externally
      *  owned account (`false`)
      */
@@ -51,8 +98,8 @@ interface INestable {
      * @dev Emitted when `tokenId` token is transferred from `from` to `to`.
      * @param from Address of the previous immediate owner, which is a smart contract if the token was nested.
      * @param to Address of the new immediate owner, which is a smart contract if the token is being nested.
-     * @param fromTokenId ID of the previous parent token. If the token was not nested before, the value should be `0`
-     * @param toTokenId ID of the new parent token. If the token is not being nested, the value should be `0`
+     * @param fromTokenId ID of the previous parent token. If the token was not nested before, the value MUST be `0`
+     * @param toTokenId ID of the new parent token. If the token is not being nested, the value MUST be `0`
      * @param tokenId ID of the token being transferred
      */
     event NestTransfer(
@@ -139,11 +186,11 @@ interface INestable {
 
     /**
      * @notice Used to retrieve the immediate owner of the given token.
-     * @dev If the immediate owner is another token, the address returned, should be the one of the parent token's
+     * @dev If the immediate owner is another token, the address returned, MUST be the one of the parent token's
      *  collection smart contract.
      * @param tokenId ID of the token for which the direct owner is being retrieved
      * @return address Address of the given token's owner
-     * @return uint256 The ID of the parent token. Should be `0` if the owner is an externally owned account
+     * @return uint256 The ID of the parent token. MUST be `0` if the owner is an externally owned account
      * @return bool The boolean value signifying whether the owner is an NFT or not
      */
     function directOwnerOf(uint256 tokenId)
@@ -158,10 +205,10 @@ interface INestable {
     /**
      * @notice Used to burn a given token.
      * @dev When a token is burned, all of its child tokens are recursively burned as well.
-     * @dev When specifying the maximum recursive burns, the execution will be reverted if there are more children to be
+     * @dev When specifying the maximum recursive burns, the execution MUST be reverted if there are more children to be
      *  burned.
-     * @dev Setting the `maxRecursiveBurn` value to 0 will only attempt to burn the specified token and revert if there
-     *  are any child tokens present.
+     * @dev Setting the `maxRecursiveBurn` value to 0 SHOULD only attempt to burn the specified token and MUST revert if
+     *  there are any child tokens present.
      * @param tokenId ID of the token to burn
      * @param maxRecursiveBurns Maximum number of tokens to recursively burn
      * @return uint256 Number of recursively burned children
@@ -175,8 +222,8 @@ interface INestable {
      * @dev This adds the child token into the given parent token's pending child tokens array.
      * @dev Requirements:
      *
-     *  - `directOwnerOf` on the child contract must resolve to the called contract.
-     *  - the pending array of the parent contract must not be full.
+     *  - `directOwnerOf` on the child contract MUST resolve to the called contract.
+     *  - the pending array of the parent contract MUST not be full.
      * @param parentId ID of the parent token to receive the new child token
      * @param childId ID of the new proposed child token
      */
@@ -205,9 +252,7 @@ interface INestable {
      * @dev The children's ownership structures are not updated.
      * @dev Requirements:
      *
-     * Requirements:
-     *
-     * - `parentId` must exist
+     * - `parentId` MUST exist
      * @param parentId ID of the parent token for which to reject all of the pending tokens
      *
      */
@@ -215,7 +260,7 @@ interface INestable {
 
     /**
      * @notice Used to unnest a child token from a given parent token.
-     * @dev When unnesting a child token, the owner of the token is set to `to`, or is not updated in the event of `to`
+     * @dev When unnesting a child token, the owner of the token MUST be set to `to`, or not updated in the event of `to`
      *  being the `0x0` address.
      * @param tokenId ID of the token from which to unnest a child token
      * @param to Address of the new owner of the child token being unnested
