@@ -387,7 +387,11 @@ Implementation that would internally keep track of indices using mapping was att
 
 4. **Why is the pending children array limited instead of supporting pagination?**
 
-- Guard against griefing
+The pending child tokens array is not meant to be a buffer to collect the tokens that the user wants to have, but not as active children. It is meant to be an easily traversible list of child token candidates and should be regularly maintained; by either accepting or rejecting proposed child tokens. There is also no need for the pending child tokens array to be unbounded, because active child tokens array is. This means that there is no motivation for the user to keep child tokens in the pending array in order not to consume the active child tokens array.
+
+Another benefit of having bounded child tokens array is to guard against spam and griefing. As minting malisioud or spam tokens could be relatively easy and low-cost, the bounded pending array assures that all of the tokens in it are easy to identify and that legitimate tokens are not lost in a flood of spam tokens, if one occurs.
+
+A consideration tied to this issue was also how to make sure, that a legitimate token is not accidentally rejected when clearing the pending child tokens array. We added the maximum pending children to reject argument to the clear pending child tokens array call. This assures that only the intended number of pending child tokens is rejected and if a new token is added to the pending child tokens array during the course of preparing such call and executing it, the cearing of this array SHOULD result in a reverted transaction.
 
 5. **Should we allow tokens to be nested into one of its children?**
 
