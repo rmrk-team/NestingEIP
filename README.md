@@ -373,8 +373,9 @@ child token's role is only to be able to be nestable and support a token owning 
 
 2. **Why is automatically accepting a child using [EIP-712](./eip-712.md) permit-style signatures not a part of this proposal?**
 
-- Overkill, this can be done by an implementer or as an extension
-- This could be done by passing the required values for the pre-signed permitted child accept to nesting transaction (would also require a bit more gas & filesize)
+Allowing automatic acceptance of child tokens in the same action as proposing them using the EIP-712 was considered. This would require adding support for automatic approval of the proposed tokens in addition to the propose-commit pattern already implemented in the proposal. While we agree this could be beneficial, we feel that it is not a required flow for the proposal to be operational. Adding support for it would also increase the file size and deployment cost of the smart contract implementing the proposal.
+
+Supporting such flow of approvals as a default flow for accepting the proposed tokens also requires more gas to process the transaction than the current one. This can still be added as an extension or custom business logic by the implementer.
 
 3. **Why use indexes?** 
 
