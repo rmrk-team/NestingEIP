@@ -220,6 +220,8 @@ interface INestable {
     /**
      * @notice Used to add a child token to a given parent token.
      * @dev This adds the child token into the given parent token's pending child tokens array.
+     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream child tokens.
+     *  child tokens.
      * @dev Requirements:
      *
      *  - `directOwnerOf` on the child contract MUST resolve to the called contract.
@@ -348,6 +350,8 @@ interface INestable {
 
     /**
      * @notice Used to transfer the token into another token.
+     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream child tokens.
+     *  child tokens.
      * @param from Address of the collection smart contract of the token to be transferred
      * @param to Address of the receiving token's collection smart contract
      * @param tokenId ID of the token being transferred
