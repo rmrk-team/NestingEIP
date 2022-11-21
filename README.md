@@ -405,9 +405,13 @@ The proposal enforces that a parent token can't ve nested into one of its child 
 
 - TODO: Add considerations & comparisons to other proposals
 
-### Mutli-Asset Storage Schema
+### Mutli-Child Storage Schema
 
-<!-- Addres how the pending and active arrays keep the token info and why this is more efficient than a single tokens array -->
+Child tokens are stored within two arrays, a pending child tokens array and an active child tokens array. The tokens are accessed using indices. This assures the most efficien way of accessing the child tokens.
+
+Using a single array containing pending nad active children would require additional information required to be stored in the storage. More specifically a value indicating wheteher the child token is active or pending. This would also disable the anti-spam inherent to the proposal as there would be no way of easily verifying that the pending children number has reached the limit.
+
+Having two children array also allows us to easily clear the pending child tokens array, so this is another benefit of keeping separate arrays.
 
 ### Propose-Commit pattern for child token management
 
