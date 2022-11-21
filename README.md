@@ -379,8 +379,11 @@ Supporting such flow of approvals as a default flow for accepting the proposed t
 
 3. **Why use indexes?** 
 
-- Reduce gas consumption
-- Guarding against race conditions using token ID
+To reduce the gas consumption. If the token ID was used to find which token to accept or reject, iteration over arrays would be required and the cost of the operation would depend on the size of the active or pending children arrays. With the index, the cost is fixed. A list of active and pending children arrays per token need to be maintained, since methods to get them are part of the proposed interface.
+
+To avoid race conditions in which the index of a token changes, the expected token ID is included in operations requiring token index, to verify that the token being accessed using the index is the expected token.
+
+Implementation that would internally keep track of indices using mapping was attempted. After experimenting with such implementation, we concluded that it is not necessary for this proposal and can be implemented as an extension for use cases willing to accept the increased transaction cost this incurs. In the sample implementation provided, there are several hooks which make this possible.
 
 4. **Why is the pending children array limited instead of supporting pagination?**
 
