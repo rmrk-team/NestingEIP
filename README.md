@@ -368,8 +368,8 @@ Designing the proposal, we considered the following questions:
 
 1. **How to name the proposal?**
 
-As this proposal standardizes the nesting of one token into another, the working title if the proposal was Nesting. In an effort to provide as much information about the proposal we identified the most important aspect of the proposal; the parent centered control over nesting. The 
-child token's role is only to be able to be nestable and support a token owning it. This is how we landed on the `Parent-Centered` part of the title.
+As this proposal standardizes the nesting of one `NFT` into another, the working title if the proposal was Nesting. In an effort to provide as much information about the proposal we identified the most important aspect of the proposal; the parent centered control over nesting. The 
+child token's role is only to be able to be `Nestable` and support a token owning it. This is how we landed on the `Parent-Centered` part of the title.
 
 2. **Why is automatically accepting a child using [EIP-712](./eip-712.md) permit-style signatures not a part of this proposal?**
 
