@@ -220,7 +220,7 @@ interface INestable {
     /**
      * @notice Used to add a child token to a given parent token.
      * @dev This adds the child token into the given parent token's pending child tokens array.
-     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream child tokens.
+     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
      *  child tokens.
      * @dev Requirements:
      *
@@ -350,7 +350,7 @@ interface INestable {
 
     /**
      * @notice Used to transfer the token into another token.
-     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream child tokens.
+     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
      *  child tokens.
      * @param from Address of the collection smart contract of the token to be transferred
      * @param to Address of the receiving token's collection smart contract
@@ -372,7 +372,7 @@ Designing the proposal, we considered the following questions:
 
 1. **How to name the proposal?**
 
-As this proposal standardizes the nesting of one `NFT` into another, the working title if the proposal was Nesting. In an effort to provide as much information about the proposal we identified the most important aspect of the proposal; the parent centered control over nesting. The 
+As this proposal standardizes the nesting of one `NFT` into another, the working title of the proposal was Nesting. In an effort to provide as much information about the proposal we identified the most important aspect of the proposal; the parent centered control over nesting. The 
 child token's role is only to be able to be `Nestable` and support a token owning it. This is how we landed on the `Parent-Centered` part of the title.
 
 2. **Why is automatically accepting a child using [EIP-712](./eip-712.md) permit-style signatures not a part of this proposal?**
@@ -385,17 +385,17 @@ Supporting such flow of approvals as a default flow for accepting the proposed t
 
 To reduce the gas consumption. If the token ID was used to find which token to accept or reject, iteration over arrays would be required and the cost of the operation would depend on the size of the active or pending children arrays. With the index, the cost is fixed. A list of active and pending children arrays per token need to be maintained, since methods to get them are part of the proposed interface.
 
-To avoid race conditions in which the index of a token changes, the expected token ID is included in operations requiring token index, to verify that the token being accessed using the index is the expected token.
+To avoid race conditions in which the index of a token changes, the expected token ID as well as the expected token's collection smart contract is included in operations requiring token index, to verify that the token being accessed using the index is the expected token.
 
-Implementation that would internally keep track of indices using mapping was attempted. After experimenting with such implementation, we concluded that it is not necessary for this proposal and can be implemented as an extension for use cases willing to accept the increased transaction cost this incurs. In the sample implementation provided, there are several hooks which make this possible.
+Implementation that would internally keep track of indices using mapping was attempted. The minimum cost of accepting a child token was increased by over 20% and the cost of minting has increased for over 15%. We concluded that it is not necessary for this proposal and can be implemented as an extension for use cases willing to accept the increased transaction cost this incurs. In the sample implementation provided, there are several hooks which make this possible.
 
 4. **Why is the pending children array limited instead of supporting pagination?**
 
 The pending child tokens array is not meant to be a buffer to collect the tokens that the user wants to have, but not as active children. It is meant to be an easily traversible list of child token candidates and should be regularly maintained; by either accepting or rejecting proposed child tokens. There is also no need for the pending child tokens array to be unbounded, because active child tokens array is. This means that there is no motivation for the user to keep child tokens in the pending array in order not to consume the active child tokens array.
 
-Another benefit of having bounded child tokens array is to guard against spam and griefing. As minting malisioud or spam tokens could be relatively easy and low-cost, the bounded pending array assures that all of the tokens in it are easy to identify and that legitimate tokens are not lost in a flood of spam tokens, if one occurs.
+Another benefit of having bounded child tokens array is to guard against spam and griefing. As minting malicious or spam tokens could be relatively easy and low-cost, the bounded pending array assures that all of the tokens in it are easy to identify and that legitimate tokens are not lost in a flood of spam tokens, if one occurs.
 
-A consideration tied to this issue was also how to make sure, that a legitimate token is not accidentally rejected when clearing the pending child tokens array. We added the maximum pending children to reject argument to the clear pending child tokens array call. This assures that only the intended number of pending child tokens is rejected and if a new token is added to the pending child tokens array during the course of preparing such call and executing it, the cearing of this array SHOULD result in a reverted transaction.
+A consideration tied to this issue was also how to make sure, that a legitimate token is not accidentally rejected when clearing the pending child tokens array. We added the maximum pending children to reject argument to the clear pending child tokens array call. This assures that only the intended number of pending child tokens is rejected and if a new token is added to the pending child tokens array during the course of preparing such call and executing it, the clearing of this array SHOULD result in a reverted transaction.
 
 5. **Should we allow tokens to be nested into one of its children?**
 
