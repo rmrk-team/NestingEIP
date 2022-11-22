@@ -266,7 +266,7 @@ interface INestable {
      *  being the `0x0` address.
      * @param tokenId ID of the token from which to unnest a child token
      * @param to Address of the new owner of the child token being unnested
-     * @param toId ID of the token to receive this child token (should be 0 if the destination is not a token)
+     * @param destinationId ID of the token to receive this child token (should be 0 if the destination is not a token)
      * @param childIndex Index of the child token to unnest in the array it is located in
      * @param childAddress Address of the collection smart contract of the child token expected to be at the specified
      *  index
@@ -278,7 +278,7 @@ interface INestable {
     function unnestChild(
         uint256 tokenId,
         address to,
-        uint256 toId,
+        uint256 destinationId,
         uint256 childIndex,
         address childAddress,
         uint256 childId,
@@ -439,7 +439,7 @@ To better understand how these state transitions are achieved, we have to look a
     function transferChild(
         uint256 tokenId,
         address to,
-        uint256 toId,
+        uint256 destinationId,
         uint256 childIndex,
         address childAddress,
         uint256 childId,
@@ -454,36 +454,38 @@ Based on the desired state transitions, the values of these parameters have to b
 
 ```mermaid
 graph LR
-    A(to = 0x0, isPending = true, toId = 0) -->|transferChild| B[Unnested child token]
+    A(to = 0x0, isPending = true, destinationId = 0) -->|transferChild| B[Rejected child token]
 ```
 
-2. Abandon child token
+2. **Abandon child token**
 
 ```mermaid
 graph LR
-    A(to = 0x0, isPending = false, toId = 0) -->|transferChild| B[Abandoned child token]
+    A(to = 0x0, isPending = false, destinationId = 0) -->|transferChild| B[Abandoned child token]
 ```
 
-3. Unest child token
+3. **Unest child token**
 
 ```mermaid
 graph LR
-    A(to = rootOwner, toId = 0) -->|transferChild| B[Unnested child token]
+    A(to = rootOwner, destinationId = 0) -->|transferChild| B[Unnested child token]
 ```
 
-4. Transfer the child token to an EOA
+4. **Transfer the child token to an EOA**
 
 ```mermaid
 graph LR
-    A(to = newEoAToReceiveTheToken, toId = 0) -->|transferChild| B[Transferred child token to EOA]
+    A(to = newEoAToReceiveTheToken, destinationId = 0) -->|transferChild| B[Transferred child token to EOA]
 ```
 
-5. Transfer the child token into a new parent token
+5. **Transfer the child token into a new parent token**
 
 ```mermaid
 graph LR
-    A(to = collectionSmartContractOfNewParent, toId = IdOfNewParentToken) -->|transferChild| B[Transferred child token in a new parent token's pending array]
+    A(to = collectionSmartContractOfNewParent, destinationId = IdOfNewParentToken) -->|transferChild| B[Transferred child token in a new parent token's pending array]
 ```
+
+This state change lands the token in the pending array of the new parent token. The child token still needs to be accepted by the new parent token's root owner in order to be placed into the active array of that token.
 
 ## Backwards Compatibility
 
