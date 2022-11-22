@@ -266,20 +266,24 @@ interface INestable {
      *  being the `0x0` address.
      * @param tokenId ID of the token from which to unnest a child token
      * @param to Address of the new owner of the child token being unnested
+     * @param toId ID of the token to receive this child token (should be 0 if the destination is not a token)
      * @param childIndex Index of the child token to unnest in the array it is located in
      * @param childAddress Address of the collection smart contract of the child token expected to be at the specified
      *  index
      * @param childId ID of the child token expected to be located at the specified index
      * @param isPending A boolean value signifying whether the child token is being unnested from the pending child
      *  tokens array (`true`) or from the active child tokens array (`false`)
+     * @param data Additional data with no specified format, sent in call to `to`
      */
     function unnestChild(
         uint256 tokenId,
         address to,
+        uint256 toId,
         uint256 childIndex,
         address childAddress,
         uint256 childId,
-        bool isPending
+        bool isPending,
+        bytes data
     ) external;
 
     /**
@@ -421,7 +425,65 @@ The limitation that only the root owner can accept the child tokens also introdu
 
 ### Child token management
 
-<!-- Explain the need for many child management function to provide all of the required functionality for standard use of this proposal -->
+This proposal inroduces a number of child token management functions. In addition to the permissioned migration from *"Pending"* to *"Active"* child tokens array, the main token management function from this proposal is the `tranferChild` function. The following state transitions of a child token are available with it:
+
+1. Reject child token
+2. Abandon child token
+3. Unest child token
+4. Transfer the child token to an EOA
+5. Transfer the child token into a new parent token
+
+To better understand how these state transitions are achieved, we have to look at the available parameters passed to `transferChild`:
+
+```solidity
+    function transferChild(
+        uint256 tokenId,
+        address to,
+        uint256 toId,
+        uint256 childIndex,
+        address childAddress,
+        uint256 childId,
+        bool isPending,
+        bytes data
+    ) external;
+```
+
+Based on the desired state transitions, the values of these parameters have to be set accordingly (any parameters not set in the following examples depend on the child token being managed):
+
+1. **Reject child token**
+
+```mermaid
+graph LR
+    A(to = 0x0, isPending = true, toId = 0) -->|transferChild| B[Unnested child token]
+```
+
+2. Abandon child token
+
+```mermaid
+graph LR
+    A(to = 0x0, isPending = false, toId = 0) -->|transferChild| B[Abandoned child token]
+```
+
+3. Unest child token
+
+```mermaid
+graph LR
+    A(to = rootOwner, toId = 0) -->|transferChild| B[Unnested child token]
+```
+
+4. Transfer the child token to an EOA
+
+```mermaid
+graph LR
+    A(to = newEoAToReceiveTheToken, toId = 0) -->|transferChild| B[Transferred child token to EOA]
+```
+
+5. Transfer the child token into a new parent token
+
+```mermaid
+graph LR
+    A(to = collectionSmartContractOfNewParent, toId = IdOfNewParentToken) -->|transferChild| B[Transferred child token in a new parent tokens pending array]
+```
 
 ## Backwards Compatibility
 
