@@ -409,7 +409,7 @@ The proposal enforces that a parent token can't ve nested into one of its child 
 
 - TODO: Add considerations & comparisons to other proposals
 
-### Mutli-Child Storage Schema
+### Multi-Child Storage Schema
 
 Child tokens are stored within two arrays, a pending child tokens array and an active child tokens array. The tokens are accessed using indices. This assures the most efficien way of accessing the child tokens.
 
