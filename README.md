@@ -482,7 +482,7 @@ graph LR
 
 ```mermaid
 graph LR
-    A(to = collectionSmartContractOfNewParent, toId = IdOfNewParentToken) -->|transferChild| B[Transferred child token in a new parent tokens pending array]
+    A(to = collectionSmartContractOfNewParent, toId = IdOfNewParentToken) -->|transferChild| B[Transferred child token in a new parent token's pending array]
 ```
 
 ## Backwards Compatibility
