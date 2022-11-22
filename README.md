@@ -415,7 +415,7 @@ Having two children array also allows us to easily clear the pending child token
 
 ### Propose-Commit pattern for child token management
 
-<!-- Make sure it comes accross that this protests the token from spam and malicious children -->
+Adding child tokens to a parent token MUST be done in the form of propose-commit pattern to allow for limited mutability by a 3rd party. When adding a child token to a parent token, it is first placed in a *"Pending"* array, and MUST be migrated to the *"Active"* array by the parent token's root owner. The *"Pending"* child tokens array SHOULD be limited to 128 slots to prevent spam and griefing.
 
 ### Child token management
 
