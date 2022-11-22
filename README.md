@@ -381,9 +381,7 @@ child token's role is only to be able to be `Nestable` and support a token ownin
 
 2. **Why is automatically accepting a child using [EIP-712](./eip-712.md) permit-style signatures not a part of this proposal?**
 
-Allowing automatic acceptance of child tokens in the same action as proposing them using the EIP-712 was considered. This would require adding support for automatic approval of the proposed tokens in addition to the propose-commit pattern already implemented in the proposal. While we agree this could be beneficial, we feel that it is not a required flow for the proposal to be operational. Adding support for it would also increase the file size and deployment cost of the smart contract implementing the proposal.
-
-Supporting such flow of approvals as a default flow for accepting the proposed tokens also requires more gas to process the transaction than the current one. This can still be added as an extension or custom business logic by the implementer.
+For consistency. This proposal extends EIP-721 which already uses 1 transaction for approving operations with tokens. It would be inconsistent to have this and also support signing messages for operations with assets.
 
 3. **Why use indexes?** 
 
@@ -403,7 +401,7 @@ A consideration tied to this issue was also how to make sure, that a legitimate 
 
 5. **Should we allow tokens to be nested into one of its children?**
 
-The proposal enforces that a parent token can't ve nested into one of its child token, or downstream child tokens for that matter. A parent token and its children are all managed by the parent token's owner. This means that if a token would be nested into one of it's children, this would create the ownership loop and none of the tokens within the loop could be managed, used or utilized anymore. While we realize that some edge cases might want to allow this, the proposal ensures that the user's experience is as secure as possible. If an implementer of this proposal wishes to allow token ownership loop, they can always override the safeguards implemented to guard against them.
+The proposal enforces that a parent token can't be nested into one of its child token, or downstream child tokens for that matter. A parent token and its children are all managed by the parent token's root owner. This means that if a token would be nested into one of it's children, this would create the ownership loop and none of the tokens within the loop could be managed, used or utilized anymore.
 
 6. **How does this proposal differ from the other proposals trying to address a similar problem?**
 
@@ -485,7 +483,7 @@ graph LR
     A(to = collectionSmartContractOfNewParent, destinationId = IdOfNewParentToken) -->|transferChild| B[Transferred child token in a new parent token's pending array]
 ```
 
-This state change lands the token in the pending array of the new parent token. The child token still needs to be accepted by the new parent token's root owner in order to be placed into the active array of that token.
+This state change places the token in the pending array of the new parent token. The child token still needs to be accepted by the new parent token's root owner in order to be placed into the active array of that token.
 
 ## Backwards Compatibility
 
