@@ -220,6 +220,8 @@ interface INestable {
     /**
      * @notice Used to add a child token to a given parent token.
      * @dev This adds the child token into the given parent token's pending child tokens array.
+     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
+     *  child tokens.
      * @dev Requirements:
      *
      *  - `directOwnerOf` on the child contract MUST resolve to the called contract.
@@ -264,20 +266,24 @@ interface INestable {
      *  being the `0x0` address.
      * @param tokenId ID of the token from which to unnest a child token
      * @param to Address of the new owner of the child token being unnested
+     * @param destinationId ID of the token to receive this child token (MUST be 0 if the destination is not a token)
      * @param childIndex Index of the child token to unnest in the array it is located in
      * @param childAddress Address of the collection smart contract of the child token expected to be at the specified
      *  index
      * @param childId ID of the child token expected to be located at the specified index
      * @param isPending A boolean value signifying whether the child token is being unnested from the pending child
      *  tokens array (`true`) or from the active child tokens array (`false`)
+     * @param data Additional data with no specified format, sent in call to `to`
      */
     function unnestChild(
         uint256 tokenId,
         address to,
+        uint256 destinationId,
         uint256 childIndex,
         address childAddress,
         uint256 childId,
-        bool isPending
+        bool isPending,
+        bytes data
     ) external;
 
     /**
@@ -348,6 +354,8 @@ interface INestable {
 
     /**
      * @notice Used to transfer the token into another token.
+     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
+     *  child tokens.
      * @param from Address of the collection smart contract of the token to be transferred
      * @param to Address of the receiving token's collection smart contract
      * @param tokenId ID of the token being transferred
@@ -364,6 +372,109 @@ interface INestable {
 
 ## Rationale
 
+Designing the proposal, we considered the following questions:
+
+1. **How to name the proposal?**
+
+In an effort to provide as much information about the proposal we identified the most important aspect of the proposal; the parent centered control over nesting. The child token's role is only to be able to be `Nestable` and support a token owning it. This is how we landed on the `Parent-Centered` part of the title.
+
+2. **Why is automatically accepting a child using [EIP-712](./eip-712.md) permit-style signatures not a part of this proposal?**
+
+For consistency. This proposal extends EIP-721 which already uses 1 transaction for approving operations with tokens. It would be inconsistent to have this and also support signing messages for operations with assets.
+
+3. **Why use indexes?** 
+
+To reduce the gas consumption. If the token ID was used to find which token to accept or reject, iteration over arrays would be required and the cost of the operation would depend on the size of the active or pending children arrays. With the index, the cost is fixed. Lists of active and pending children per token need to be maintained, since methods to get them are part of the proposed interface.
+
+To avoid race conditions in which the index of a token changes, the expected token ID as well as the expected token's collection smart contract is included in operations requiring token index, to verify that the token being accessed using the index is the expected one.
+
+Implementation that would internally keep track of indices using mapping was attempted. The minimum cost of accepting a child token was increased by over 20% and the cost of minting has increased by over 15%. We concluded that it is not necessary for this proposal and can be implemented as an extension for use cases willing to accept the increased transaction cost this incurs. In the sample implementation provided, there are several hooks which make this possible.
+
+4. **Why is the pending children array limited instead of supporting pagination?**
+
+The pending child tokens array is not meant to be a buffer to collect the tokens that the root owner of the parent token wants to keep, but not enough to promote them to active children. It is meant to be an easily traversible list of child token candidates and should be regularly maintained; by either accepting or rejecting proposed child tokens. There is also no need for the pending child tokens array to be unbounded, because active child tokens array is.
+
+Another benefit of having bounded child tokens array is to guard against spam and griefing. As minting malicious or spam tokens could be relatively easy and low-cost, the bounded pending array assures that all of the tokens in it are easy to identify and that legitimate tokens are not lost in a flood of spam tokens, if one occurs.
+
+A consideration tied to this issue was also how to make sure, that a legitimate token is not accidentally rejected when clearing the pending child tokens array. We added the maximum pending children to reject argument to the clear pending child tokens array call. This assures that only the intended number of pending child tokens is rejected and if a new token is added to the pending child tokens array during the course of preparing such call and executing it, the clearing of this array SHOULD result in a reverted transaction.
+
+5. **Should we allow tokens to be nested into one of its children?**
+
+The proposal enforces that a parent token can't be nested into one of its child token, or downstream child tokens for that matter. A parent token and its children are all managed by the parent token's root owner. This means that if a token would be nested into one of it's children, this would create the ownership loop and none of the tokens within the loop could be managed anymore.
+
+6. **How does this proposal differ from the other proposals trying to address a similar problem?**
+
+- TODO: Add considerations & comparisons to other proposals
+
+### Propose-Commit pattern for child token management
+
+Adding child tokens to a parent token MUST be done in the form of propose-commit pattern to allow for limited mutability by a 3rd party. When adding a child token to a parent token, it is first placed in a *"Pending"* array, and MUST be migrated to the *"Active"* array by the parent token's root owner. The *"Pending"* child tokens array SHOULD be limited to 128 slots to prevent spam and griefing.
+
+The limitation that only the root owner can accept the child tokens also introduces a trust inherent to the proposal. This ensures that the root owner of the token has full control over the token. No one can force the user to accept a child if they don't want to.
+
+### Child token management
+
+This proposal inroduces a number of child token management functions. In addition to the permissioned migration from *"Pending"* to *"Active"* child tokens array, the main token management function from this proposal is the `tranferChild` function. The following state transitions of a child token are available with it:
+
+1. Reject child token
+2. Abandon child token
+3. Unest child token
+4. Transfer the child token to an EOA
+5. Transfer the child token into a new parent token
+
+To better understand how these state transitions are achieved, we have to look at the available parameters passed to `transferChild`:
+
+```solidity
+    function transferChild(
+        uint256 tokenId,
+        address to,
+        uint256 destinationId,
+        uint256 childIndex,
+        address childAddress,
+        uint256 childId,
+        bool isPending,
+        bytes data
+    ) external;
+```
+
+Based on the desired state transitions, the values of these parameters have to be set accordingly (any parameters not set in the following examples depend on the child token being managed):
+
+1. **Reject child token**
+
+```mermaid
+graph LR
+    A(to = 0x0, isPending = true, destinationId = 0) -->|transferChild| B[Rejected child token]
+```
+
+2. **Abandon child token**
+
+```mermaid
+graph LR
+    A(to = 0x0, isPending = false, destinationId = 0) -->|transferChild| B[Abandoned child token]
+```
+
+3. **Unest child token**
+
+```mermaid
+graph LR
+    A(to = rootOwner, destinationId = 0) -->|transferChild| B[Unnested child token]
+```
+
+4. **Transfer the child token to an EOA**
+
+```mermaid
+graph LR
+    A(to = newEoAToReceiveTheToken, destinationId = 0) -->|transferChild| B[Transferred child token to EOA]
+```
+
+5. **Transfer the child token into a new parent token**
+
+```mermaid
+graph LR
+    A(to = collectionSmartContractOfNewParent, destinationId = IdOfNewParentToken) -->|transferChild| B[Transferred child token in a new parent token's pending array]
+```
+
+This state change places the token in the pending array of the new parent token. The child token still needs to be accepted by the new parent token's root owner in order to be placed into the active array of that token.
 
 ## Backwards Compatibility
 
