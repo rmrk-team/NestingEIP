@@ -385,7 +385,7 @@ For consistency. This proposal extends EIP-721 which already uses 1 transaction 
 
 3. **Why use indexes?** 
 
-To reduce the gas consumption. If the token ID was used to find which token to accept or reject, iteration over arrays would be required and the cost of the operation would depend on the size of the active or pending children arrays. With the index, the cost is fixed. A list of active and pending children arrays per token need to be maintained, since methods to get them are part of the proposed interface.
+To reduce the gas consumption. If the token ID was used to find which token to accept or reject, iteration over arrays would be required and the cost of the operation would depend on the size of the active or pending children arrays. With the index, the cost is fixed. Lists of active and pending children per token need to be maintained, since methods to get them are part of the proposed interface.
 
 To avoid race conditions in which the index of a token changes, the expected token ID as well as the expected token's collection smart contract is included in operations requiring token index, to verify that the token being accessed using the index is the expected one.
 
