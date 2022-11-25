@@ -81,8 +81,8 @@ interface INestable {
     event AllChildrenRejected(uint256 indexed tokenId);
 
     /**
-     * @notice Used to notify listeners a child token has been unnested from parent token.
-     * @dev Emitted when a token unnests a child from itself, transferring ownership to the root owner.
+     * @notice Used to notify listeners a child token has been transferred from parent token.
+     * @dev Emitted when a token transfers a child from itself, transferring ownership to the root owner.
      * @param tokenId ID of the token that unnested a child token
      * @param childAddress Address of the child token's collection smart contract
      * @param childId ID of the child token in the child token's collection smart contract
@@ -90,7 +90,7 @@ interface INestable {
      * @param fromPending A boolean value signifying whether the token was in the pending child tokens array (`true`) or
      *  in the active child tokens array (`false`)
      */
-    event ChildUnnested(
+    event ChildTransferred(
         uint256 indexed tokenId,
         uint256 childIndex,
         address indexed childAddress,
@@ -155,8 +155,13 @@ interface INestable {
      *  - the pending array of the parent contract must not be full.
      * @param parentId ID of the parent token to receive the new child token
      * @param childId ID of the new proposed child token
+     * @param data Additional data with no specified format
      */
-    function addChild(uint256 parentId, uint256 childId) external;
+    function addChild(
+        uint256 parentId,
+        uint256 childId,
+        bytes memory data
+    ) external;
 
     /**
      * @notice Used to accept a pending child token for a given parent token.
@@ -184,31 +189,37 @@ interface INestable {
      * Requirements:
      *
      * - `parentId` must exist
-     * @param parentId ID of the parent token for which to reject all of the pending tokens
-     *
+     * @param parentId ID of the parent token for which to reject all of the pending tokens.
+     * @param maxRejections Maximum number of expected children to reject, used to prevent from
+     *  rejecting children which arrive just before this operation.
      */
-    function rejectAllChildren(uint256 parentId) external;
+    function rejectAllChildren(uint256 parentId, uint256 maxRejections)
+        external;
 
     /**
-     * @notice Used to unnest a child token from a given parent token.
-     * @dev When unnesting a child token, the owner of the token is set to `to`, or is not updated in the event of `to`
+     * @notice Used to transfer a child token from a given parent token.
+     * @dev When transferring a child token, the owner of the token is set to `to`, or is not updated in the event of `to`
      *  being the `0x0` address.
-     * @param tokenId ID of the token from which to unnest a child token
-     * @param to Address of the new owner of the child token being unnested
-     * @param childIndex Index of the child token to unnest in the array it is located in
-     * @param childAddress Address of the collection smart contract of the child token expected to be at the specified
-     *  index
-     * @param childId ID of the child token expected to be located at the specified index
-     * @param isPending A boolean value signifying whether the child token is being unnested from the pending child
-     *  tokens array (`true`) or from the active child tokens array (`false`)
+     * @param tokenId ID of the parent token from which the child token is being transferred
+     * @param to Address to which to transfer the token to
+     * @param destinationId ID of the token to receive this child token (MUST be 0 if the destination is not a token)
+     * @param childIndex Index of a token we are transfering, in the array it belongs to (can be either active array or
+     *  pending array)
+     * @param childAddress Address of the child token's collection smart contract.
+     * @param childId ID of the child token in its own collection smart contract.
+     * @param isPending A boolean value indicating whether the child token being transferred is in the pending array of the
+     *  parent token (`true`) or in the active array (`false`)
+     * @param data Additional data with no specified format, sent in call to `_to`
      */
-    function unnestChild(
+    function transferChild(
         uint256 tokenId,
         address to,
+        uint256 destinationId,
         uint256 childIndex,
         address childAddress,
         uint256 childId,
-        bool isPending
+        bool isPending,
+        bytes memory data
     ) external;
 
     /**
@@ -281,11 +292,13 @@ interface INestable {
      * @param to Address of the receiving token's collection smart contract
      * @param tokenId ID of the token being transferred
      * @param destinationId ID of the token to receive the token being transferred
+     * @param data Additional data with no specified format, sent in the addChild call
      */
     function nestTransferFrom(
         address from,
         address to,
         uint256 tokenId,
-        uint256 destinationId
+        uint256 destinationId,
+        bytes memory data
     ) external;
 }

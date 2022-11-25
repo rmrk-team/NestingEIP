@@ -37,11 +37,12 @@ error NestableTransferToSelf();
 error NotApprovedOrDirectOwner();
 error PendingChildIndexOutOfRange();
 error UnexpectedChildId();
+error UnexpectedNumberOfChildren();
 
 /**
  * @title NestableToken
  * @author RMRK team
- * @notice Smart contract of the RMRK Nestable module.
+ * @notice Smart contract of the Nestable module.
  * @dev This contract is hierarchy agnostic and can support an arbitrary number of nested levels up and down, as long as
  *  gas limits allow it.
  */
@@ -187,14 +188,16 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
      * @param to Address of the receiving token's collection smart contract
      * @param tokenId ID of the token being transferred
      * @param destinationId ID of the token to receive the token being transferred
+     * @param data Additional data with no specified format, sent in the addChild call
      */
     function nestTransferFrom(
         address from,
         address to,
         uint256 tokenId,
-        uint256 destinationId
+        uint256 destinationId,
+        bytes memory data
     ) public virtual onlyApprovedOrDirectOwner(tokenId) {
-        _nestTransfer(from, to, tokenId, destinationId);
+        _nestTransfer(from, to, tokenId, destinationId, data);
     }
 
     /**
@@ -269,12 +272,14 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
      * @param to Address of the receiving token's collection smart contract
      * @param tokenId ID of the token to transfer
      * @param destinationId ID of the token receiving the given token
+     * @param data Additional data with no specified format, sent in the addChild call
      */
     function _nestTransfer(
         address from,
         address to,
         uint256 tokenId,
-        uint256 destinationId
+        uint256 destinationId,
+        bytes memory data
     ) internal virtual {
         (address immediateOwner, uint256 parentId, ) = directOwnerOf(tokenId);
         if (immediateOwner != from) revert ERC721TransferFromIncorrectOwner();
@@ -302,7 +307,7 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
         _balances[to] += 1;
 
         // Sending to NFT:
-        _sendToNFT(immediateOwner, to, parentId, destinationId, tokenId);
+        _sendToNFT(immediateOwner, to, parentId, destinationId, tokenId, data);
     }
 
     /**
@@ -315,16 +320,18 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
      * @param parentId ID of the current parent token of the token being sent
      * @param destinationId ID of the tokento receive the token being sent
      * @param tokenId ID of the token being sent
+     * @param data Additional data with no specified format, sent in the addChild call
      */
     function _sendToNFT(
         address from,
         address to,
         uint256 parentId,
         uint256 destinationId,
-        uint256 tokenId
+        uint256 tokenId,
+        bytes memory data
     ) private {
         INestable destContract = INestable(to);
-        destContract.addChild(destinationId, tokenId);
+        destContract.addChild(destinationId, tokenId, data);
         _afterTokenTransfer(from, to, tokenId);
         _afterNestedTokenTransfer(from, to, parentId, destinationId, tokenId);
 
@@ -431,11 +438,13 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
      * @param to Address of the collection smart contract of the token into which to mint the child token
      * @param tokenId ID of the token to mint
      * @param destinationId ID of the token into which to mint the new child token
+     * @param data Additional data with no specified format, sent in the addChild call
      */
     function _nestMint(
         address to,
         uint256 tokenId,
-        uint256 destinationId
+        uint256 destinationId,
+        bytes memory data
     ) internal virtual {
         // It seems redundant, but otherwise it would revert with no error
         if (!to.isContract()) revert IsNotContract();
@@ -443,7 +452,7 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
             revert MintToNonNestableImplementer();
 
         _innerMint(to, tokenId, destinationId);
-        _sendToNFT(address(0), to, 0, destinationId, tokenId);
+        _sendToNFT(address(0), to, 0, destinationId, tokenId, data);
     }
 
     /**
@@ -849,9 +858,13 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
      *  - The pending array of the parent contract must not be full.
      * @param parentId ID of the parent token to receive the new child token
      * @param childId ID of the new proposed child token
+     * @param data Additional data with no specified format
      */
-
-    function addChild(uint256 parentId, uint256 childId) public virtual {
+    function addChild(
+        uint256 parentId,
+        uint256 childId,
+        bytes memory data
+    ) public virtual {
         _requireMinted(parentId);
 
         address childAddress = _msgSender();
@@ -948,10 +961,8 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
      *  rootOwner of the previous parent.
      * @param tokenId ID of the parent token for which to reject all of the pending tokens
      */
-    function rejectAllChildren(
-        uint256 tokenId
-    ) public virtual onlyApprovedOrOwner(tokenId) {
-        _rejectAllChildren(tokenId);
+    function rejectAllChildren(uint256 tokenId, uint256 maxRejections) public virtual onlyApprovedOrOwner(tokenId) {
+        _rejectAllChildren(tokenId, maxRejections);
     }
 
     /**
@@ -962,9 +973,17 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
      * @dev Requirements:
      *
      *  - `tokenId` must exist
-     * @param tokenId ID of the parent token for which to reject all of the pending tokens
+     * @param tokenId ID of the parent token for which to reject all of the pending tokens.
+     * @param maxRejections Maximum number of expected children to reject, used to prevent from
+     *  rejecting children which arrive just before this operation.
      */
-    function _rejectAllChildren(uint256 tokenId) internal virtual {
+    function _rejectAllChildren(uint256 tokenId, uint256 maxRejections)
+        internal
+        virtual
+    {
+        if (_pendingChildren[tokenId].length > maxRejections)
+            revert UnexpectedNumberOfChildren();
+
         _beforeRejectAllChildren(tokenId);
         delete _pendingChildren[tokenId];
         emit AllChildrenRejected(tokenId);
@@ -972,53 +991,68 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
     }
 
     /**
-     * @notice Function to unnest a child from the active token array.
-     * @param tokenId ID of the token from which to unnest a child token
-     * @param to Address of the new owner of the child token being unnested
-     * @param childIndex Index of the child token to unnest in the array it is located in
-     * @param childAddress Address of the collection smart contract of the child token expected to be located at the
-     *  specified index of the given parent token's pending children array
-     * @param childId ID of the child token expected to be located at the specified index of the given parent token's
-     *  pending children array
-     * @param isPending A boolean value signifying whether the child token is being unnested from the pending child
-     *  tokens array (`true`) or from the active child tokens array (`false`)
+     * @notice Used to transfer a child token from a given parent token.
+     * @param tokenId ID of the parent token from which the child token is being transferred
+     * @param to Address to which to transfer the token to
+     * @param destinationId ID of the token to receive this child token (MUST be 0 if the destination is not a token)
+     * @param childIndex Index of a token we are transfering, in the array it belongs to (can be either active array or
+     *  pending array)
+     * @param childAddress Address of the child token's collection smart contract.
+     * @param childId ID of the child token in its own collection smart contract.
+     * @param isPending A boolean value indicating whether the child token being transferred is in the pending array of the
+     *  parent token (`true`) or in the active array (`false`)
+     * @param data Additional data with no specified format, sent in call to `_to`
      */
-    function unnestChild(
+    function transferChild(
         uint256 tokenId,
         address to,
+        uint256 destinationId,
         uint256 childIndex,
         address childAddress,
         uint256 childId,
-        bool isPending
+        bool isPending,
+        bytes memory data
     ) public virtual onlyApprovedOrOwner(tokenId) {
-        _unnestChild(tokenId, to, childIndex, childAddress, childId, isPending);
+        _transferChild(
+            tokenId,
+            to,
+            destinationId,
+            childIndex,
+            childAddress,
+            childId,
+            isPending,
+            data
+        );
     }
 
     /**
-     * @notice Used to unnest a child token from a given parent token.
-     * @dev When unnesting a child token, the owner of the token is set to `to`, or is not updated in the event of `to`
+     * @notice Used to transfer a child token from a given parent token.
+     * @dev When transferring a child token, the owner of the token is set to `to`, or is not updated in the event of `to`
      *  being the `0x0` address.
      * @dev Requirements:
      *
      *  - `tokenId` must exist.
-     * @dev Emits {ChildUnnested} event.
-     * @param tokenId ID of the token from which to unnest a child token
-     * @param to Address of the new owner of the child token being unnested
-     * @param childIndex Index of the child token to unnest in the array it is located in
-     * @param childAddress Address of the collection smart contract of the child token expected to be located at the
-     *  specified index of the given parent token's pending children array
-     * @param childId ID of the child token expected to be located at the specified index of the given parent token's
-     *  pending children array
-     * @param isPending A boolean value signifying whether the child token is being unnested from the pending child
-     *  tokens array (`true`) or from the active child tokens array (`false`)
+     * @dev Emits {ChildTransferred} event.
+     * @param tokenId ID of the parent token from which the child token is being transferred
+     * @param to Address to which to transfer the token to
+     * @param destinationId ID of the token to receive this child token (MUST be 0 if the destination is not a token)
+     * @param childIndex Index of a token we are transfering, in the array it belongs to (can be either active array or
+     *  pending array)
+     * @param childAddress Address of the child token's collection smart contract.
+     * @param childId ID of the child token in its own collection smart contract.
+     * @param isPending A boolean value indicating whether the child token being transferred is in the pending array of the
+     *  parent token (`true`) or in the active array (`false`)
+     * @param data Additional data with no specified format, sent in call to `_to`
      */
-    function _unnestChild(
+    function _transferChild(
         uint256 tokenId,
         address to,
+        uint256 destinationId, // newParentId
         uint256 childIndex,
         address childAddress,
         uint256 childId,
-        bool isPending
+        bool isPending,
+        bytes memory data
     ) internal virtual {
         Child memory child;
         if (isPending) {
@@ -1028,7 +1062,7 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
         }
         _checkExpectedChild(child, childAddress, childId);
 
-        _beforeUnnestChild(
+        _beforeTransferChild(
             tokenId,
             childIndex,
             childAddress,
@@ -1044,17 +1078,33 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
         }
 
         if (to != address(0)) {
-            IERC721(childAddress).safeTransferFrom(address(this), to, childId);
+            if (destinationId == 0) {
+                IERC721(childAddress).safeTransferFrom(
+                    address(this),
+                    to,
+                    childId,
+                    data
+                );
+            } else {
+                // Destination is an NFT
+                INestable(child.contractAddress).nestTransferFrom(
+                    address(this),
+                    to,
+                    child.tokenId,
+                    destinationId,
+                    data
+                );
+            }
         }
 
-        emit ChildUnnested(
+        emit ChildTransferred(
             tokenId,
             childIndex,
             childAddress,
             childId,
             isPending
         );
-        _afterUnnestChild(
+        _afterTransferChild(
             tokenId,
             childIndex,
             childAddress,
@@ -1332,23 +1382,23 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
     ) internal virtual {}
 
     /**
-     * @notice Hook that is called before a child is unnested from a given child token array of a given token.
+     * @notice Hook that is called before a child is transferred from a given child token array of a given token.
      * @dev The Child struct consists of the following values:
      *  [
      *      tokenId,
      *      contractAddress
      *  ]
      * @dev To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-     * @param tokenId ID of the token that will unnest a child token
-     * @param childIndex Index of the child token that will be unnested from the given parent token's children array
+     * @param tokenId ID of the token that will transfer a child token
+     * @param childIndex Index of the child token that will be transferred from the given parent token's children array
      * @param childAddress Address of the collection smart contract of the child token that is expected to be located
      *  at the specified index of the given parent token's children array
      * @param childId ID of the child token that is expected to be located at the specified index of the given parent
      *  token's children array
-     * @param isPending A boolean value signifying whether the child token is being unnested from the pending child
+     * @param isPending A boolean value signifying whether the child token is being transferred from the pending child
      *  tokens array (`true`) or from the active child tokens array (`false`)
      */
-    function _beforeUnnestChild(
+    function _beforeTransferChild(
         uint256 tokenId,
         uint256 childIndex,
         address childAddress,
@@ -1357,23 +1407,23 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
     ) internal virtual {}
 
     /**
-     * @notice Hook that is called after a child is unnested from a given child token array of a given token.
+     * @notice Hook that is called after a child is transferred from a given child token array of a given token.
      * @dev The Child struct consists of the following values:
      *  [
      *      tokenId,
      *      contractAddress
      *  ]
      * @dev To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-     * @param tokenId ID of the token that has unnested a child token
-     * @param childIndex Index of the child token that was unnested from the given parent token's children array
+     * @param tokenId ID of the token that has transferred a child token
+     * @param childIndex Index of the child token that was transferred from the given parent token's children array
      * @param childAddress Address of the collection smart contract of the child token that was expected to be located
      *  at the specified index of the given parent token's children array
      * @param childId ID of the child token that was expected to be located at the specified index of the given parent
      *  token's children array
-     * @param isPending A boolean value signifying whether the child token was unnested from the pending child tokens
+     * @param isPending A boolean value signifying whether the child token was transferred from the pending child tokens
      *  array (`true`) or from the active child tokens array (`false`)
      */
-    function _afterUnnestChild(
+    function _afterTransferChild(
         uint256 tokenId,
         uint256 childIndex,
         address childAddress,

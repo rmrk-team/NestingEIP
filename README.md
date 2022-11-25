@@ -157,7 +157,7 @@ interface INestable {
      * @param fromPending A boolean value signifying whether the token was in the pending child tokens array (`true`) or
      *  in the active child tokens array (`false`)
      */
-    event ChildUnnested(
+    event ChildTransferred(
         uint256 indexed tokenId,
         uint256 childIndex,
         address indexed childAddress,
