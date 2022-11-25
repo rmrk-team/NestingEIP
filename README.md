@@ -61,7 +61,7 @@ A common utility attached to NFTs is a membership to a Decentralised Autonomous 
 
 ### Delegation
 
-One of the core features of DAOs is voting and there are various approaches to it. One such mechanic is using fungible voting tokens where members can delegate their votes by sending these tokens to another member. Using this proposal, delegated voting could be handled by nesting your voting NFT into the one you are delegating your votes to and unnesting it when the member no longer wishes to delegate their votes.
+One of the core features of DAOs is voting and there are various approaches to it. One such mechanic is using fungible voting tokens where members can delegate their votes by sending these tokens to another member. Using this proposal, delegated voting could be handled by nesting your voting NFT into the one you are delegating your votes to and transferring it when the member no longer wishes to delegate their votes.
 
 ## Specification
 
@@ -147,13 +147,12 @@ interface INestable {
      */
     event AllChildrenRejected(uint256 indexed tokenId);
 
-    /**
-     * @notice Used to notify listeners a child token has been unnested from parent token.
-     * @dev Emitted when a token unnests a child from itself, transferring ownership to the root owner.
-     * @param tokenId ID of the token that unnested a child token
+    * @notice Used to notify listeners a child token has been transferred from parent token.
+     * @dev Emitted when a token transfers a child from itself, transferring ownership to the root owner.
+     * @param tokenId ID of the token that transferred a child token
      * @param childAddress Address of the child token's collection smart contract
      * @param childId ID of the child token in the child token's collection smart contract
-     * @param childIndex Index of a child in the array from which it is being unnested
+     * @param childIndex Index of a child in the array from which it is being transferred
      * @param fromPending A boolean value signifying whether the token was in the pending child tokens array (`true`) or
      *  in the active child tokens array (`false`)
      */
@@ -256,26 +255,26 @@ interface INestable {
      *
      * - `parentId` MUST exist
      * @param parentId ID of the parent token for which to reject all of the pending tokens
-     *
      */
     function rejectAllChildren(uint256 parentId) external;
 
     /**
-     * @notice Used to unnest a child token from a given parent token.
-     * @dev When unnesting a child token, the owner of the token MUST be set to `to`, or not updated in the event of `to`
+     * @notice Used to transfer a child token from a given parent token.
+     * @dev MUST remove the child from the parent's active or pending children.
+     * @dev When transferring a child token, the owner of the token MUST be set to `to`, or not updated in the event of `to`
      *  being the `0x0` address.
-     * @param tokenId ID of the token from which to unnest a child token
-     * @param to Address of the new owner of the child token being unnested
+     * @param tokenId ID of the parent token from which the child token is being transferred
+     * @param to Address to which to transfer the token to
      * @param destinationId ID of the token to receive this child token (MUST be 0 if the destination is not a token)
-     * @param childIndex Index of the child token to unnest in the array it is located in
-     * @param childAddress Address of the collection smart contract of the child token expected to be at the specified
-     *  index
-     * @param childId ID of the child token expected to be located at the specified index
-     * @param isPending A boolean value signifying whether the child token is being unnested from the pending child
-     *  tokens array (`true`) or from the active child tokens array (`false`)
+     * @param childIndex Index of a token we are transferring, in the array it belongs to (can be either active array or
+     *  pending array)
+     * @param childAddress Address of the child token's collection smart contract.
+     * @param childId ID of the child token in its own collection smart contract.
+     * @param isPending A boolean value indicating whether the child token being transferred is in the pending array of the
+     *  parent token (`true`) or in the active array (`false`)
      * @param data Additional data with no specified format, sent in call to `to`
      */
-    function unnestChild(
+    function transferChild(
         uint256 tokenId,
         address to,
         uint256 destinationId,
@@ -402,9 +401,13 @@ A consideration tied to this issue was also how to make sure, that a legitimate 
 
 The proposal enforces that a parent token can't be nested into one of its child token, or downstream child tokens for that matter. A parent token and its children are all managed by the parent token's root owner. This means that if a token would be nested into one of it's children, this would create the ownership loop and none of the tokens within the loop could be managed anymore.
 
-6. **How does this proposal differ from the other proposals trying to address a similar problem?**
+6. **Why is there not a "safe" nest transfer method?**
 
-- TODO: Add considerations & comparisons to other proposals
+`nestTransfer` is always "safe" since it MUST check for `INestable` compatibility on the destination.
+
+7. **How does this proposal differ from the other proposals trying to address a similar problem?**
+
+This interface allows for tokens to both be sent to and receive other tokens. The propose-accept and parent governed patterns allow for a more secure use. The backward compatibility is only added for ERC721, allowing for a simpler interface.
 
 ### Propose-Commit pattern for child token management
 
@@ -412,9 +415,21 @@ Adding child tokens to a parent token MUST be done in the form of propose-commit
 
 The limitation that only the root owner can accept the child tokens also introduces a trust inherent to the proposal. This ensures that the root owner of the token has full control over the token. No one can force the user to accept a child if they don't want to.
 
+### Parent Governed pattern
+
+The parent NFT of a nested token and the parent's root owner are in all aspects the true owners of it. Once you send a token to another one you give up ownership.
+
+We continue to use ERC721's `ownerOf` functionality which will now recursively look up through parents until it finds an address which is not an NFT, this is referred to as root owner. Additionally we provide the `directOwnerOf` which returns the most immediate owner of a token using 3 values: the owner address, the tokenId which must be 0 if owner is not an NFT, and a flag indicating whether or not the parent is an NFT.
+
+The root owner or an approved party MUST be able do the following operations on children: `acceptChild`, `rejectAllChildren` and `transferChild`.
+The root owner or an approved party MUST also be allowed to do these opoerations only when token is not owned by an NFT: `transferFrom`, `safeTransferFrom`, `nestTransferFrom`, `burn`.
+If the token is owned by an NFT, only the parent NFT itself MUST be allowed to. Transfers MUST be done from the parent by using `transferChild`, this method in turn SHOULD call `nestTransferFrom` or `safeTransferFrom` on the child, according to whether the destination is an NFT or not. For burning, tokens must first be transferred to an EOA and then burned.
+
+We add this restriction to prevent inconsistencies on parent contracts, since only the `transferChild` method takes care of removing the child from the parent when it is being transferred out.
+
 ### Child token management
 
-This proposal inroduces a number of child token management functions. In addition to the permissioned migration from *"Pending"* to *"Active"* child tokens array, the main token management function from this proposal is the `tranferChild` function. The following state transitions of a child token are available with it:
+This proposal introduces a number of child token management functions. In addition to the permissioned migration from *"Pending"* to *"Active"* child tokens array, the main token management function from this proposal is the `tranferChild` function. The following state transitions of a child token are available with it:
 
 1. Reject child token
 2. Abandon child token
@@ -453,7 +468,7 @@ graph LR
     A(to = 0x0, isPending = false, destinationId = 0) -->|transferChild| B[Abandoned child token]
 ```
 
-3. **Unest child token**
+3. **Unnest child token**
 
 ```mermaid
 graph LR
