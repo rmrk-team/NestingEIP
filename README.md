@@ -176,8 +176,8 @@ interface INestable {
 
     /**
      * @notice Used to retrieve the *root* owner of a given token.
-     * @dev The *root* owner of the token is an externally owned account (EOA). If the given token is child of another
-     *  NFT, this will return an EOA address. Otherwise, if the token is owned by an EOA, this EOA wil be returned.
+     * @dev The *root* owner of the token is the highest owner on the hierarchy which is not an NFT.
+     *  If the token is owned by another NFT, it MUST recursively look up the parent's root owner.
      * @param tokenId ID of the token for which the *root* owner has been retrieved
      * @return owner The *root* owner of the token
      */
