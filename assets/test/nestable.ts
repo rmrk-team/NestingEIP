@@ -658,13 +658,12 @@ describe('NestableToken', function () {
     });
 
     it('can transfer child if approved', async function () {
-      const unnester = addrs[1];
+      const transferer = addrs[1];
       const toOwner = tokenOwner.address;
-      // Since unnest is child scoped, approval must be on the child contract to child id
-      await parent.connect(tokenOwner).approve(unnester.address, parentId);
+      await parent.connect(tokenOwner).approve(transferer.address, parentId);
 
       await parent
-        .connect(unnester)
+        .connect(transferer)
         .transferChild(parentId, toOwner, 0, 0, child.address, childId1, false, '0x');
       await checkChildMovedToRootOwner();
     });
@@ -672,7 +671,6 @@ describe('NestableToken', function () {
     it('can transfer child if approved for all', async function () {
       const operator = addrs[2];
       const toOwner = tokenOwner.address;
-      // Since unnest is child scoped, approval must be on the child contract to child id
       await parent.connect(tokenOwner).setApprovalForAll(operator.address, true);
 
       await parent
@@ -686,7 +684,7 @@ describe('NestableToken', function () {
       const grandchildId = 999;
       await child.nestMint(child.address, grandchildId, childId1);
 
-      // Unnest child from parent.
+      // Transfer child from parent.
       await parent
         .connect(tokenOwner)
         .transferChild(parentId, toOwner, 0, 0, child.address, childId1, false, '0x');
@@ -725,7 +723,7 @@ describe('NestableToken', function () {
       expect(await child.ownerOf(childId1)).to.eql(rootOwnerAddress);
       expect(await child.directOwnerOf(childId1)).to.eql([rootOwnerAddress, bn(0), false]);
 
-      // Unnesting updates balances downstream
+      // Transferring updates balances downstream
       expect(await child.balanceOf(rootOwnerAddress)).to.equal(1);
       expect(await parent.balanceOf(tokenOwner.address)).to.equal(1);
     }
@@ -820,13 +818,12 @@ describe('NestableToken', function () {
     });
 
     it('can transfer child if approved', async function () {
-      const unnester = addrs[1];
+      const transferer = addrs[1];
       const toOwner = tokenOwner.address;
-      // Since unnest is child scoped, approval must be on the child contract to child id
-      await parent.connect(tokenOwner).approve(unnester.address, parentId);
+      await parent.connect(tokenOwner).approve(transferer.address, parentId);
 
       await parent
-        .connect(unnester)
+        .connect(transferer)
         .transferChild(parentId, toOwner, 0, 0,child.address, childId1, true, '0x');
       await checkChildMovedToRootOwner();
     });
@@ -834,7 +831,6 @@ describe('NestableToken', function () {
     it('can transfer child if approved for all', async function () {
       const operator = addrs[2];
       const toOwner = tokenOwner.address;
-      // Since unnest is child scoped, approval must be on the child contract to child id
       await parent.connect(tokenOwner).setApprovalForAll(operator.address, true);
 
       await parent
@@ -848,7 +844,7 @@ describe('NestableToken', function () {
       const grandchildId = 999;
       await child.nestMint(child.address, grandchildId, childId1);
 
-      // Unnest child from parent.
+      // Transfer child from parent.
       await parent
         .connect(tokenOwner)
         .transferChild(parentId, toOwner, 0, 0, child.address, childId1, true, '0x');
@@ -887,7 +883,7 @@ describe('NestableToken', function () {
       expect(await child.ownerOf(childId1)).to.eql(rootOwnerAddress);
       expect(await child.directOwnerOf(childId1)).to.eql([rootOwnerAddress, bn(0), false]);
 
-      // Unnesting updates balances downstream
+      // Transferring updates balances downstream
       expect(await child.balanceOf(rootOwnerAddress)).to.equal(1);
       expect(await parent.balanceOf(tokenOwner.address)).to.equal(1);
     }
