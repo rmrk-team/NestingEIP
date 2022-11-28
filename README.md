@@ -17,7 +17,7 @@ The Parent-Governed Nestable NFT standard extends the [EIP-721](./eip-721.md) by
 
 At its core, the idea behind the proposal is simple: the owner of an NFT does not have to be an Externally Owned Account (EOA) or a smart contract, it can also be an NFT.
 
-The process of nesting a NFT into another is functionally identical to sending it to another user. The process of sending a token out of another one involves issuing a transaction from the EOA ownining the parent token.
+The process of nesting an NFT into another is functionally identical to sending it to another user. The process of sending a token out of another one involves issuing a transaction from the EOA ownining the parent token.
 
 An NFT can be owned by a single other NFT, but can in turn have a number of NFTs that it owns. This proposal establishes the framework for the parent-child relationships of NFTs. A parent token is the one that owns another token. A child token is the token that is owned by another token. A token can be both a parent and child at the same time. Child tokens of a given tokens can be fully managed by the parent token's owner, but can be proposed by anyone.
 
@@ -53,7 +53,7 @@ One of the most frequent uses of [EIP-721](./eip-721.md) is to disseminate the m
 
 A lot of NFT consumers collect them based on countless criteria. Some aim for utility of the tokens, some for the uniqueness, some for the visual appeal, etc. There is no standardized way to group the NFTs tied to a specific account. By nesting NFTs based on their owner's preference, this proposal introduces the ability to do it. The root parent token could represent a certain group of tokens and all of the children nested into it would belong to it.
 
-The rise of soulbound, non-transferable, tokens, introduces another need for this proposal. Having a token with multiple solbound traits (child tokens), allows for numerous use cases. One concrete example of this can be drawn from supply trains usecase. A shipping container, represented by an NFT with its own traits, could have multiple child tokens denoting each leg of its journey.
+The rise of soulbound, non-transferable, tokens, introduces another need for this proposal. Having a token with multiple soulbound traits (child tokens), allows for numerous use cases. One concrete example of this can be drawn from supply trains usecase. A shipping container, represented by an NFT with its own traits, could have multiple child tokens denoting each leg of its journey.
 
 ### Membership
 
@@ -77,9 +77,9 @@ pragma solidity ^0.8.16;
 interface INestable {
     /**
      * @notice The core struct of ownership.
-     * @dev The `DirectOwner` struct is used to store information of the next immediate owner, be it the parent token or
-     *  the externally owned account.
-     * @dev If the token is owned by the externally owned account, the `tokenId` MUST equal `0`.
+     * @dev The `DirectOwner` struct is used to store information of the next immediate owner, be it the parent token,
+     * an `ERC721Receiver` contract or the externally owned account.
+     * @dev If the token is not owned by an NFT, the `tokenId` MUST equal `0`.
      * @param tokenId ID of the parent token
      * @param ownerAddress Address of the owner of the token. If the owner is another token, then the address MUST be
      *  the one of the parent token's collection smart contract. If the owner is externally owned account, the address
@@ -114,9 +114,9 @@ interface INestable {
      * @notice Used to notify listeners that a new token has been added to a given token's pending children array.
      * @dev Emitted when a child NFT is added to a token's pending array.
      * @param tokenId ID of the token that received a new pending child token
+     * @param childIndex Index of the proposed child token in the parent token's pending children array
      * @param childAddress Address of the proposed child token's collection smart contract
      * @param childId ID of the child token in the child token's collection smart contract
-     * @param childIndex Index of the proposed child token in the parent token's pending children array
      */
     event ChildProposed(
         uint256 indexed tokenId,
@@ -129,9 +129,9 @@ interface INestable {
      * @notice Used to notify listeners that a new child token was accepted by the parent token.
      * @dev Emitted when a parent token accepts a token from its pending array, migrating it to the active array.
      * @param tokenId ID of the token that accepted a new child token
+     * @param childIndex Index of the newly accepted child token in the parent token's active children array
      * @param childAddress Address of the child token's collection smart contract
      * @param childId ID of the child token in the child token's collection smart contract
-     * @param childIndex Index of the newly accepted child token in the parent token's active children array
      */
     event ChildAccepted(
         uint256 indexed tokenId,
@@ -147,12 +147,13 @@ interface INestable {
      */
     event AllChildrenRejected(uint256 indexed tokenId);
 
-    * @notice Used to notify listeners a child token has been transferred from parent token.
-     * @dev Emitted when a token transfers a child from itself, transferring ownership to the root owner.
+    /**
+     * @notice Used to notify listeners a child token has been transferred from parent token.
+     * @dev Emitted when a token transfers a child from itself, transferring ownership.
      * @param tokenId ID of the token that transferred a child token
+     * @param childIndex Index of a child in the array from which it is being transferred
      * @param childAddress Address of the child token's collection smart contract
      * @param childId ID of the child token in the child token's collection smart contract
-     * @param childIndex Index of a child in the array from which it is being transferred
      * @param fromPending A boolean value signifying whether the token was in the pending child tokens array (`true`) or
      *  in the active child tokens array (`false`)
      */
@@ -189,7 +190,7 @@ interface INestable {
      *  collection smart contract.
      * @param tokenId ID of the token for which the direct owner is being retrieved
      * @return address Address of the given token's owner
-     * @return uint256 The ID of the parent token. MUST be `0` if the owner is an externally owned account
+     * @return uint256 The ID of the parent token. MUST be `0` if the owner is not an NFT
      * @return bool The boolean value signifying whether the owner is an NFT or not
      */
     function directOwnerOf(uint256 tokenId)
@@ -221,6 +222,8 @@ interface INestable {
      * @dev This adds the child token into the given parent token's pending child tokens array.
      * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
      *  child tokens.
+     * @dev This method MUST NOT directly. It MUST only be called from an instance of `INestable` as part of a 
+        `nestMint`, `nestTransfer` or `transferChild` to an NFT.
      * @dev Requirements:
      *
      *  - `directOwnerOf` on the child contract MUST resolve to the called contract.
@@ -357,7 +360,7 @@ interface INestable {
      * @notice Used to transfer the token into another token.
      * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
      *  child tokens.
-     * @param from Address of the collection smart contract of the token to be transferred
+     * @param from Address of the direct owner of the token to be transferred
      * @param to Address of the receiving token's collection smart contract
      * @param tokenId ID of the token being transferred
      * @param destinationId ID of the token to receive the token being transferred
@@ -437,8 +440,8 @@ This proposal introduces a number of child token management functions. In additi
 
 1. Reject child token
 2. Abandon child token
-3. Unest child token
-4. Transfer the child token to an EOA or an `ERC721Receiver`.
+3. Unnest child token
+4. Transfer the child token to an EOA or an `ERC721Receiver`
 5. Transfer the child token into a new parent token
 
 To better understand how these state transitions are achieved, we have to look at the available parameters passed to `transferChild`:

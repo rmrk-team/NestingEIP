@@ -184,11 +184,12 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
 
     /**
      * @notice Used to transfer the token into another token.
-     * @param from Address of the collection smart contract of the token to be transferred
+     * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
+     *  child tokens.
+     * @param from Address of the direct owner of the token to be transferred
      * @param to Address of the receiving token's collection smart contract
      * @param tokenId ID of the token being transferred
      * @param destinationId ID of the token to receive the token being transferred
-     * @param data Additional data with no specified format, sent in the addChild call
      */
     function nestTransferFrom(
         address from,
@@ -852,6 +853,8 @@ contract NestableToken is Context, IERC165, IERC721, INestable {
     /**
      * @notice Used to add a child token to a given parent token.
      * @dev This adds the iichild token into the given parent token's pending child tokens array.
+     * @dev You MUST NOT call this method directly. To add a a child to an NFT you must use either
+     *  `nestTransfer`, `nestMint` or `transferChild` to the NFT.
      * @dev Requirements:
      *
      *  - `ownerOf` on the child contract must resolve to the called contract.
