@@ -78,7 +78,7 @@ interface INestable {
     /**
      * @notice The core struct of ownership.
      * @dev The `DirectOwner` struct is used to store information of the next immediate owner, be it the parent token,
-     * an `ERC721Receiver` contract or the externally owned account.
+     * an `ERC721Receiver` contract or an externally owned account.
      * @dev If the token is not owned by an NFT, the `tokenId` MUST equal `0`.
      * @param tokenId ID of the parent token
      * @param ownerAddress Address of the owner of the token. If the owner is another token, then the address MUST be
