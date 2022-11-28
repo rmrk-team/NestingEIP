@@ -255,8 +255,10 @@ interface INestable {
      *
      * - `parentId` MUST exist
      * @param parentId ID of the parent token for which to reject all of the pending tokens
+     * @param maxRejections Maximum number of expected children to reject, used to prevent from
+     *  rejecting children which arrive just before this operation.
      */
-    function rejectAllChildren(uint256 parentId) external;
+    function rejectAllChildren(uint256 parentId, uint256 maxRejections) external;
 
     /**
      * @notice Used to transfer a child token from a given parent token.
@@ -436,7 +438,7 @@ This proposal introduces a number of child token management functions. In additi
 1. Reject child token
 2. Abandon child token
 3. Unest child token
-4. Transfer the child token to an EOA
+4. Transfer the child token to an EOA or an `ERC721Receiver`.
 5. Transfer the child token into a new parent token
 
 To better understand how these state transitions are achieved, we have to look at the available parameters passed to `transferChild`:
@@ -477,7 +479,7 @@ graph LR
     A(to = rootOwner, destinationId = 0) -->|transferChild| B[Unnested child token]
 ```
 
-4. **Transfer the child token to an EOA**
+4. **Transfer the child token to an EOA or an `ERC721Receiver`**
 
 ```mermaid
 graph LR
