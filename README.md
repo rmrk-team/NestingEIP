@@ -176,8 +176,8 @@ interface INestable {
 
     /**
      * @notice Used to retrieve the *root* owner of a given token.
-     * @dev The *root* owner of the token is the highest owner on the hierarchy which is not an NFT.
-     *  If the token is owned by another NFT, it MUST recursively look up the parent's root owner.
+     * @dev The *root* owner of the token is the top-level owner in the hierarchy which is not an NFT.
+     * @dev If the token is owned by another NFT, it MUST recursively look up the parent's root owner.
      * @param tokenId ID of the token for which the *root* owner has been retrieved
      * @return owner The *root* owner of the token
      */
@@ -268,8 +268,8 @@ interface INestable {
      * @param destinationId ID of the token to receive this child token (MUST be 0 if the destination is not a token)
      * @param childIndex Index of a token we are transferring, in the array it belongs to (can be either active array or
      *  pending array)
-     * @param childAddress Address of the child token's collection smart contract.
-     * @param childId ID of the child token in its own collection smart contract.
+     * @param childAddress Address of the child token's collection smart contract
+     * @param childId ID of the child token in its own collection smart contract
      * @param isPending A boolean value indicating whether the child token being transferred is in the pending array of the
      *  parent token (`true`) or in the active array (`false`)
      * @param data Additional data with no specified format, sent in call to `to`
@@ -419,13 +419,15 @@ The limitation that only the root owner can accept the child tokens also introdu
 
 The parent NFT of a nested token and the parent's root owner are in all aspects the true owners of it. Once you send a token to another one you give up ownership.
 
-We continue to use ERC721's `ownerOf` functionality which will now recursively look up through parents until it finds an address which is not an NFT, this is referred to as root owner. Additionally we provide the `directOwnerOf` which returns the most immediate owner of a token using 3 values: the owner address, the tokenId which must be 0 if owner is not an NFT, and a flag indicating whether or not the parent is an NFT.
+We continue to use ERC721's `ownerOf` functionality which will now recursively look up through parents until it finds an address which is not an NFT, this is referred to as the *root owner*. Additionally we provide the `directOwnerOf` which returns the most immediate owner of a token using 3 values: the owner address, the tokenId which MUST be 0 if the direct owner is not an NFT, and a flag indicating whether or not the parent is an NFT.
 
 The root owner or an approved party MUST be able do the following operations on children: `acceptChild`, `rejectAllChildren` and `transferChild`.
-The root owner or an approved party MUST also be allowed to do these opoerations only when token is not owned by an NFT: `transferFrom`, `safeTransferFrom`, `nestTransferFrom`, `burn`.
-If the token is owned by an NFT, only the parent NFT itself MUST be allowed to. Transfers MUST be done from the parent by using `transferChild`, this method in turn SHOULD call `nestTransferFrom` or `safeTransferFrom` on the child, according to whether the destination is an NFT or not. For burning, tokens must first be transferred to an EOA and then burned.
 
-We add this restriction to prevent inconsistencies on parent contracts, since only the `transferChild` method takes care of removing the child from the parent when it is being transferred out.
+The root owner or an approved party MUST also be allowed to do these operations only when token is not owned by an NFT: `transferFrom`, `safeTransferFrom`, `nestTransferFrom`, `burn`.
+
+If the token is owned by an NFT, only the parent NFT itself MUST be allowed to execute the operations listed above. Transfers MUST be done from the parent token, using `transferChild`, this method in turn SHOULD call `nestTransferFrom` or `safeTransferFrom` in the child token's smart contract, according to whether the destination is an NFT or not. For burning, tokens must first be transferred to an EOA and then burned.
+
+We add this restriction to prevent inconsistencies on parent contracts, since only the `transferChild` method takes care of removing the child from the parent when it is being transferred out of it.
 
 ### Child token management
 
