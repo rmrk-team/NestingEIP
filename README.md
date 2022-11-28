@@ -486,7 +486,7 @@ graph LR
 
 ```mermaid
 graph LR
-    A(to = newEoAToReceiveTheToken, destinationId = 0) -->|transferChild| B[Transferred child token to EOA]
+    A(to = newEoAToReceiveTheToken, destinationId = 0) -->|transferChild| B[Transferred child token to EOA or ERC721Receiver]
 ```
 
 5. **Transfer the child token into a new parent token**
