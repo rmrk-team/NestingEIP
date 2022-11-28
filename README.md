@@ -222,7 +222,7 @@ interface INestable {
      * @dev This adds the child token into the given parent token's pending child tokens array.
      * @dev The destination token MUST NOT be a child token of the token being transferred or one of its downstream
      *  child tokens.
-     * @dev This method MUST NOT be callable directly. It MUST only be called from an instance of `INestable` as part of a 
+     * @dev This method MUST NOT be called directly. It MUST only be called from an instance of `INestable` as part of a 
         `nestMint`, `nestTransfer` or `transferChild` to an NFT.
      * @dev Requirements:
      *
@@ -373,6 +373,8 @@ interface INestable {
     ) external;
 }
 ```
+
+ID MUST never be a `0` value, as this proposal uses `0` values do signify that the token/destination is not an NFT.
 
 ## Rationale
 
